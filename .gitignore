@@ -1,0 +1,8 @@
+# IDE
+.vscode/    
+
+# dev folders
+target/
+tmp/
+src/debug/
+.legacy/

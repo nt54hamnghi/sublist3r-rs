@@ -1,0 +1,7 @@
+group_imports = "StdExternalCrate"
+imports_granularity = "Module"
+imports_layout = "Mixed"
+imports_indent = "Visual"
+reorder_imports = true
+reorder_modules = true
+# use_small_heuristics = "Max"

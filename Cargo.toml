@@ -1,0 +1,30 @@
+[package]
+name = "sublist3r-rs"
+version = "0.1.0"
+authors = ["Nghi Nguyen <hamnghi250699@gmail.com>"]
+edition = "2024"
+description = "A Rust port of sublist3r"
+
+[dependencies]
+anyhow = "1.0.97"
+clap = "4.5.31"
+regex = "1.11.1"
+reqwest = { version = "0.12.12", features = ["json", "gzip"] }
+tokio = { version = "1.44.0", features = ["full"] }
+# hickory-resolver = "0.24.4"
+# scraper = "0.23.1"
+
+[dev-dependencies]
+rstest = "0.25.0"
+
+[[bin]]
+name = "sublist3r-rs"
+path = "src/main.rs"
+
+# [[bin]]
+# name = "debug"
+# path = "src/debug/main.rs"
+
+[lints.rust]
+unused = "allow"
+unsafe_code = "forbid"
