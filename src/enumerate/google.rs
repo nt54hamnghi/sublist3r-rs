@@ -16,6 +16,7 @@ use super::{Extract, Search};
 // - "Lynx/2.8.6rel.5 libwww-FM/2.14"
 // - "w3m/0.5.3"
 const USER_AGENT: &str = "Lynx/2.8.6rel.5 libwww-FM/2.14";
+const PER_PAGE: usize = 20;
 static RE: OnceLock<Regex> = OnceLock::new();
 
 pub(crate) struct Google {
@@ -32,10 +33,7 @@ impl Google {
 }
 
 impl Extract for Google {
-    async fn extract<T>(&self, input: T) -> HashSet<String>
-    where
-        T: AsRef<String> + Send + 'static,
-    {
+    fn extract(&self, input: &str) -> impl Iterator<Item = String> {
         let re = RE.get_or_init(|| {
             // Captures subdomains from Google search result page, which is in HTML format.
             // The pattern matches valid domain names followed by the HTML entity &#8250; (›)
@@ -52,18 +50,12 @@ impl Extract for Google {
             Regex::new(&pat).expect("failed to compile regex")
         });
 
-        // TODO: handle errors
-        tokio::task::spawn_blocking(move || {
-            re.captures_iter(input.as_ref())
-                .map(|c| c["subdomain"].to_owned())
-                .collect::<HashSet<_>>()
-        })
-        .await
-        .unwrap()
+        re.captures_iter(input).map(|c| c["subdomain"].to_owned())
     }
 }
 
 impl Search for Google {
+    const NAME: &str = "Google";
     const BASE_URL: &str = "https://www.google.com/search";
 
     /// Constructs a search query for subdomain enumeration
@@ -76,12 +68,12 @@ impl Search for Google {
     /// For example:
     ///
     ///  - If no subdomains have been discovered yet, the query will be:
-    /// `site:example.com -www.example.com`
+    ///    `site:example.com -www.example.com`
     ///
     ///  - If subdomains have been discovered, the query will be:
-    /// `site:example.com -www.example.com -subdomain1.example.com -subdomain2.example.com`
+    ///    `site:example.com -www.example.com -subdomain1.example.com -subdomain2.example.com`
     fn generate_query(&self, subdomains: &HashSet<String>) -> String {
-        // TODO: limit the number of subdomains to exclude to 10
+        // TODO: consider limiting the number of subdomains to exclude
         let found = subdomains
             .iter()
             .fold(String::new(), |acc, d| format!("{} -{}", acc, d));
@@ -95,15 +87,20 @@ impl Search for Google {
         query: &str,
         page: usize,
     ) -> Result<Response, reqwest::Error> {
-        // Google's default number of results per page is 10.
-        // We offset the start by 10 for each page.
-        let start = page * 10;
+        // Starting position for pagination, (with `PER_PAGE` = 20):
+        // - page = 0 -> start = 0  (results 1-20)
+        // - page = 1 -> start = 20 (results 21-40)
+        // - page = 2 -> start = 40 (results 41-60)
+        // and so on...
+        let start = page * PER_PAGE;
+
         client
             .get(Self::BASE_URL)
             .query(&[
                 ("q", query),
                 ("hl", "en-US"),
-                ("start", start.to_string().as_ref()), // result offset from num, 0 = first page, 25 = second page, etc.
+                ("num", PER_PAGE.to_string().as_ref()), // number of search results per page
+                ("start", start.to_string().as_ref()),  // starting position for pagination
                 ("filter", "0"), // duplicates content filter, 0 = include duplicates
             ])
             .header(header::USER_AGENT, USER_AGENT)
@@ -114,8 +111,9 @@ impl Search for Google {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rstest::rstest;
+
+    use super::*;
 
     #[rstest]
     #[case::empty(vec![], "site:example.com -www.example.com")]
@@ -123,10 +121,39 @@ mod tests {
     // #[case::multiple(vec!["app.example.com", "api.example.com"], "site:example.com -www.example.com -app.example.com -api.example.com")]
     fn test_generate_query(#[case] subdomains: Vec<&'static str>, #[case] expected: &str) {
         let domain = "example.com";
-        let mut google = Google::new(domain);
+        let google = Google::new(domain);
 
         let subdomains = subdomains.into_iter().map(|s| s.to_owned()).collect();
 
         assert_eq!(google.generate_query(&subdomains), expected);
+    }
+
+    #[rstest]
+    #[case::empty("", vec![])]
+    #[case::no_matches("no matches found", vec![])]
+    #[case::basic(
+        r#"<div>app.example.com &#8250; Text</div>"#,
+        vec!["app.example.com"]
+    )]
+    #[case::with_hyphens(
+        r#"<div>with-hypen.example.com &#8250; Text</div>"#,
+        vec!["with-hypen.example.com"]
+    )]
+    #[case::multi_level(
+        r#"<div>level1.level2.example.com &#8250; Text</div>"#,
+        vec!["level1.level2.example.com"]
+    )]
+    #[case::multi_matches(
+        r#"
+        <div>first.example.com &#8250; Text</div>
+        <div>second.example.com &#8250; Text</div>
+        <div>fourth.third.example.com &#8250; Text</div>
+        "#,
+        vec!["first.example.com", "second.example.com", "fourth.third.example.com"]
+    )]
+    fn test_extract_single_level(#[case] input: &str, #[case] expected: Vec<&str>) {
+        let google = Google::new("example.com");
+        let results: Vec<String> = google.extract(input).collect();
+        assert_eq!(expected, results);
     }
 }

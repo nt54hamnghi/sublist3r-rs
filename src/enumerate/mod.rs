@@ -1,5 +1,5 @@
+use std::cmp::max;
 use std::collections::HashSet;
-use std::sync::Arc;
 
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, HeaderMap, HeaderValue};
 use reqwest::{Client, Response};
@@ -29,12 +29,11 @@ pub(crate) fn defaults_headers() -> HeaderMap {
 }
 
 pub(crate) trait Extract {
-    async fn extract<T>(&self, input: T) -> HashSet<String>
-    where
-        T: AsRef<String> + Send + 'static;
+    fn extract(&self, input: &str) -> impl Iterator<Item = String>;
 }
 
 pub(crate) trait Search {
+    const NAME: &str;
     const BASE_URL: &str;
 
     fn generate_query(&self, subdomains: &HashSet<String>) -> String;
@@ -78,8 +77,6 @@ where
         let mut current = 0;
 
         loop {
-            println!("page: {}", page);
-            println!("retries: {}", retries);
             if retries > 5 || page > MAX_PAGES {
                 break;
             }
@@ -101,12 +98,15 @@ where
                 continue;
             };
 
-            let extracted_subdomains = self.engine.extract(Arc::new(body)).await;
-            self.subdomains.extend(extracted_subdomains);
+            // informs the executor that this task is about to block the thread
+            // so any other tasks can be moved to a new worker thread
+            tokio::task::block_in_place(|| {
+                self.subdomains.extend(self.engine.extract(&body));
+            });
 
-            println!("current: {} - found: {}", current, self.subdomains.len());
             if current != self.subdomains.len() {
                 current = self.subdomains.len();
+                retries = max(0, retries - 1);
             } else {
                 retries += 1;
             }
