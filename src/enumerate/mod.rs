@@ -3,10 +3,12 @@ use std::collections::HashSet;
 
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, HeaderMap, HeaderValue};
 use reqwest::{Client, Response};
+use tracing::{info, trace, warn};
 
 pub(crate) mod google;
 
 const MAX_PAGES: usize = 20;
+const MAX_RETRIES: usize = 5;
 
 pub(crate) fn defaults_headers() -> HeaderMap {
     let mut headers = HeaderMap::with_capacity(3);
@@ -63,39 +65,47 @@ where
     }
 }
 
-// temporary alias for `anyhow::Error`
-// might need to replace it with a custom error type defined with thiserror
-type Error = anyhow::Error;
-
 impl<E> Enumerator<E>
 where
     E: Search + Extract,
 {
-    pub async fn enumerate(&mut self, client: Client) -> Result<&HashSet<String>, Error> {
+    #[tracing::instrument(skip_all, fields(name = E::NAME))]
+    pub async fn enumerate(&mut self, client: Client) -> &HashSet<String> {
         let mut page = 0;
         let mut retries = 0;
-        let mut current = 0;
+        let mut found = 0;
 
         loop {
-            if retries > 5 || page > MAX_PAGES {
+            trace!(page, found, retries, "searching");
+            if retries > MAX_RETRIES || page > MAX_PAGES {
+                info!(retries, page, "completed");
                 break;
             }
 
             let query = self.engine.generate_query(&self.subdomains);
 
-            let Ok(resp) = self
+            info!(query, "searching");
+            let resp = match self
                 .engine
                 .search(client.clone(), &query, page)
                 .await
                 .and_then(|r| r.error_for_status())
-            else {
-                retries += 1;
-                continue;
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    warn!(err = ?e, "failed to search");
+                    retries += 1;
+                    continue;
+                }
             };
 
-            let Ok(body) = resp.text().await else {
-                retries += 1;
-                continue;
+            let body = match resp.text().await {
+                Ok(b) => b,
+                Err(e) => {
+                    warn!(err = ?e, "failed to parse search results");
+                    retries += 1;
+                    continue;
+                }
             };
 
             // informs the executor that this task is about to block the thread
@@ -104,16 +114,18 @@ where
                 self.subdomains.extend(self.engine.extract(&body));
             });
 
-            if current != self.subdomains.len() {
-                current = self.subdomains.len();
+            if found != self.subdomains.len() {
+                found = self.subdomains.len();
                 retries = max(0, retries - 1);
             } else {
                 retries += 1;
             }
             page += 1;
+
+            // Sleep after each page to avoid being blocked
             // tokio::time::sleep(Duration::from_secs(2)).await;
         }
 
-        Ok(&self.subdomains)
+        &self.subdomains
     }
 }

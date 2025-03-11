@@ -7,10 +7,13 @@ description = "A Rust port of sublist3r"
 
 [dependencies]
 anyhow = "1.0.97"
-clap = "4.5.31"
+clap = "4.5.32"
 regex = "1.11.1"
 reqwest = { version = "0.12.12", features = ["json", "gzip"] }
+# thiserror = "2.0.12"
 tokio = { version = "1.44.0", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
 # hickory-resolver = "0.24.4"
 # scraper = "0.23.1"
 
@@ -26,5 +29,5 @@ path = "src/main.rs"
 # path = "src/debug/main.rs"
 
 [lints.rust]
-unused = "allow"
 unsafe_code = "forbid"
+# unused = "allow"
