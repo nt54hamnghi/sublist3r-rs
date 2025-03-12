@@ -5,19 +5,25 @@ use regex::Regex;
 use reqwest::header::{self};
 use reqwest::{Client, Response};
 
-use super::{Extract, SUBDOMAIN_RE_STR, Search};
+use super::{Extract, SUBDOMAIN_RE_STR, Search, Settings};
 
-// Google requires JavaScript to be enabled for `/search` public endpoint.
-// Pure-text browsers seem to be exempt from this requirement.
-// User-Agent values of these browsers can be used to get raw HTML search results.
-// More info: https://news.ycombinator.com/item?id=42747092
-//
-// Values that appear to work:
-// - "Lynx/2.8.6rel.5 libwww-FM/2.14"
-// - "w3m/0.5.3"
-const USER_AGENT: &str = "Lynx/2.8.6rel.5 libwww-FM/2.14";
-const PER_PAGE: usize = 20;
 static RE: OnceLock<Regex> = OnceLock::new();
+
+const PER_PAGE: usize = 20;
+const SETTINGS: Settings = Settings {
+    name: "Google",
+    base_url: "https://www.google.com/search",
+    // Google requires JavaScript to be enabled for `/search` public endpoint.
+    // Pure-text browsers seem to be exempt from this requirement.
+    // User-Agent values of these browsers can be used to get raw HTML search results.
+    // More info: https://news.ycombinator.com/item?id=42747092
+    //
+    // Values that appear to work:
+    // - "Lynx/2.8.6rel.5 libwww-FM/2.14"
+    // - "w3m/0.5.3"
+    user_agent: "Lynx/2.8.6rel.5 libwww-FM/2.14",
+    max_pages: 20,
+};
 
 pub(crate) struct Google {
     domain: String,
@@ -33,7 +39,7 @@ impl Google {
 }
 
 impl Extract for Google {
-    fn extract(&self, input: &str) -> impl Iterator<Item = String> {
+    fn extract(&self, input: &str) -> HashSet<String> {
         let re = RE.get_or_init(|| {
             // Captures subdomains from Google search result page, which is in HTML format.
             // The pattern matches valid domain names followed by the HTML entity &#8250; (›)
@@ -44,15 +50,13 @@ impl Extract for Google {
             Regex::new(&pat).expect("failed to compile regex")
         });
 
-        re.captures_iter(input).map(|c| c["subdomain"].to_owned())
+        re.captures_iter(input)
+            .map(|c| c["subdomain"].to_owned())
+            .collect()
     }
 }
 
 impl Search for Google {
-    const NAME: &str = "Google";
-    const BASE_URL: &str = "https://www.google.com/search";
-    const MAX_PAGES: usize = 20;
-
     /// Constructs a search query for subdomain enumeration
     ///
     /// Creates a query using Google's search syntax. The query structure is:
@@ -76,6 +80,10 @@ impl Search for Google {
         format!("site:{0} -www.{0}{1}", self.domain, found)
     }
 
+    fn settings(&self) -> Settings {
+        SETTINGS
+    }
+
     async fn search(
         &self,
         client: Client,
@@ -91,7 +99,7 @@ impl Search for Google {
         let start = page * PER_PAGE;
 
         client
-            .get(Self::BASE_URL)
+            .get(SETTINGS.base_url)
             .query(&[
                 ("q", query),
                 ("hl", "en-US"),
@@ -99,7 +107,7 @@ impl Search for Google {
                 ("start", start.to_string().as_ref()),  // starting position for pagination
                 ("filter", "0"), // duplicates content filter, 0 = include duplicates
             ])
-            .header(header::USER_AGENT, USER_AGENT)
+            .header(header::USER_AGENT, SETTINGS.user_agent)
             .send()
             .await
     }
@@ -168,7 +176,9 @@ mod tests {
     )]
     fn test_extract_single_level(#[case] input: &str, #[case] expected: Vec<&str>) {
         let google = Google::new("example.com");
-        let results: Vec<String> = google.extract(input).collect();
+        let results = google.extract(input);
+
+        let expected: HashSet<String> = expected.into_iter().map(String::from).collect();
         assert_eq!(expected, results);
     }
 }

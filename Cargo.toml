@@ -8,6 +8,7 @@ description = "A Rust port of sublist3r"
 [dependencies]
 anyhow = "1.0.97"
 clap = "4.5.32"
+enum_dispatch = "0.3.13"
 regex = "1.11.1"
 reqwest = { version = "0.12.12", features = ["json", "gzip"] }
 # thiserror = "2.0.12"

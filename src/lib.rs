@@ -1,6 +1,9 @@
+use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
+
 use enumerate::google::Google;
 use enumerate::yahoo::Yahoo;
-use enumerate::{Enumerator, defaults_headers};
+use enumerate::{Engine, Enumerator, defaults_headers};
 use reqwest::Client;
 use tracing::info;
 
@@ -15,12 +18,25 @@ pub async fn run(_input: &str) -> anyhow::Result<()> {
         .gzip(true) // enable gzip compression
         .build()?;
 
-    let mut e = Enumerator::new(Yahoo::new("google.com"));
-    let mut e = Enumerator::new(Google::new("google.com"));
+    let domain = "tesla.com";
+    let engines: Vec<Engine> = vec![Yahoo::new(domain).into(), Google::new(domain).into()];
+    let subdomains = Arc::new(Mutex::new(HashSet::<String>::new()));
 
-    let subdomains = e.enumerate(client.clone()).await;
+    let mut join_set = tokio::task::JoinSet::new();
+    for ng in engines {
+        let r = subdomains.clone();
+        let c = client.clone();
+        join_set.spawn(async move {
+            let mut e = Enumerator::new(ng);
+            let found = e.enumerate(c).await;
+            let mut guard = r.lock().unwrap();
+            guard.extend(found.into_iter());
+        });
+    }
 
-    for sub in subdomains {
+    let output = join_set.join_all().await;
+
+    for sub in subdomains.lock().unwrap().iter() {
         println!("{}", sub);
     }
 

@@ -4,14 +4,20 @@ use std::sync::OnceLock;
 use regex::Regex;
 use reqwest::{Client, Response, header};
 
-use super::{Extract, SUBDOMAIN_RE_STR, Search};
+use super::{Extract, SUBDOMAIN_RE_STR, Search, Settings};
+
+static RE: OnceLock<Regex> = OnceLock::new();
 
 // Yahoo seems to always return 7 results per page.
 // Until we find a way to configure the number of results per page,
 // don't change this value.
 const PER_PAGE: usize = 7;
-const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36";
-static YAHOO_RE: OnceLock<Regex> = OnceLock::new();
+const SETTINGS: Settings = Settings {
+    name: "Yahoo",
+    base_url: "https://search.yahoo.com/search",
+    user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    max_pages: 30,
+};
 
 pub(crate) struct Yahoo {
     domain: String,
@@ -27,8 +33,8 @@ impl Yahoo {
 }
 
 impl Extract for Yahoo {
-    fn extract(&self, input: &str) -> impl Iterator<Item = String> {
-        let re = YAHOO_RE.get_or_init(|| {
+    fn extract(&self, input: &str) -> HashSet<String> {
+        let re = RE.get_or_init(|| {
             // Captures subdomains from Yahoo search result page, which is in HTML format.
             let domain = self.domain.replace(".", r"\.");
             let pat = format!(r#"<span>(?<subdomain>{SUBDOMAIN_RE_STR}\.{domain})<\/span>"#);
@@ -37,15 +43,13 @@ impl Extract for Yahoo {
             Regex::new(&pat).expect("failed to compile regex")
         });
 
-        re.captures_iter(input).map(|c| c["subdomain"].to_owned())
+        re.captures_iter(input)
+            .map(|c| c["subdomain"].to_owned())
+            .collect()
     }
 }
 
 impl Search for Yahoo {
-    const NAME: &str = "Yahoo";
-    const BASE_URL: &str = "https://search.yahoo.com/search";
-    const MAX_PAGES: usize = 50;
-
     fn generate_query(&self, subdomains: &HashSet<String>) -> String {
         // TODO: consider limiting the number of subdomains to exclude
         let found = subdomains
@@ -53,6 +57,10 @@ impl Search for Yahoo {
             .fold(String::new(), |acc, d| format!("{} -domain:{}", acc, d));
 
         format!("site:{0} -domain:www.{0}{1}", self.domain, found)
+    }
+
+    fn settings(&self) -> Settings {
+        SETTINGS
     }
 
     async fn search(
@@ -69,9 +77,9 @@ impl Search for Yahoo {
         let b = (page * PER_PAGE) + 1;
 
         client
-            .get(Self::BASE_URL)
+            .get(SETTINGS.base_url)
             .query(&[("p", query), ("b", b.to_string().as_ref())])
-            .header(header::USER_AGENT, USER_AGENT)
+            .header(header::USER_AGENT, SETTINGS.user_agent)
             .send()
             .await
     }
@@ -139,7 +147,9 @@ mod tests {
     )]
     fn test_extract_single_level(#[case] input: &str, #[case] expected: Vec<&str>) {
         let yahoo = Yahoo::new("example.com");
-        let results: Vec<String> = yahoo.extract(input).collect();
+        let results = yahoo.extract(input);
+
+        let expected: HashSet<String> = expected.into_iter().map(String::from).collect();
         assert_eq!(expected, results);
     }
 }
