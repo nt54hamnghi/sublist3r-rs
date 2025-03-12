@@ -1,4 +1,3 @@
-use std::cmp::max;
 use std::collections::HashSet;
 
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, HeaderMap, HeaderValue};
@@ -6,9 +5,17 @@ use reqwest::{Client, Response};
 use tracing::{info, trace, warn};
 
 pub(crate) mod google;
+pub(crate) mod yahoo;
 
-const MAX_PAGES: usize = 20;
 const MAX_RETRIES: usize = 5;
+
+/// regex pattern for a subdomain
+/// It ensures proper domain name format:
+///  1. One or more labels separated by dots
+///  2. Each label can contain alphanumeric characters and hyphens
+///  3. Hyphens can appear in the middle, but not at start/end
+///  4. No empty labels (consecutive dots)
+const SUBDOMAIN_RE_STR: &str = r#"(?:[[:alnum:]](?:[[:alnum:]-]*[[:alnum:]])?)(?:\.[[:alnum:]](?:[[:alnum:]-]*[[:alnum:]])?)*"#;
 
 pub(crate) fn defaults_headers() -> HeaderMap {
     let mut headers = HeaderMap::with_capacity(3);
@@ -37,6 +44,7 @@ pub(crate) trait Extract {
 pub(crate) trait Search {
     const NAME: &str;
     const BASE_URL: &str;
+    const MAX_PAGES: usize;
 
     fn generate_query(&self, subdomains: &HashSet<String>) -> String;
 
@@ -77,7 +85,7 @@ where
 
         loop {
             trace!(page, found, retries, "searching");
-            if retries > MAX_RETRIES || page > MAX_PAGES {
+            if retries > MAX_RETRIES || page > E::MAX_PAGES {
                 info!(retries, page, "completed");
                 break;
             }
@@ -116,7 +124,8 @@ where
 
             if found != self.subdomains.len() {
                 found = self.subdomains.len();
-                retries = max(0, retries - 1);
+                // subtracts 1 and saturates at 0 instead of underflowing if the result would be negative.
+                retries = retries.saturating_sub(1);
             } else {
                 retries += 1;
             }

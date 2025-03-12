@@ -5,7 +5,7 @@ use regex::Regex;
 use reqwest::header::{self};
 use reqwest::{Client, Response};
 
-use super::{Extract, Search};
+use super::{Extract, SUBDOMAIN_RE_STR, Search};
 
 // Google requires JavaScript to be enabled for `/search` public endpoint.
 // Pure-text browsers seem to be exempt from this requirement.
@@ -37,15 +37,9 @@ impl Extract for Google {
         let re = RE.get_or_init(|| {
             // Captures subdomains from Google search result page, which is in HTML format.
             // The pattern matches valid domain names followed by the HTML entity &#8250; (›)
-            // It ensures proper domain name format:
-            //  1. One or more labels separated by dots
-            //  2. Each label can contain alphanumeric characters and hyphens
-            //  3. Hyphens can appear in the middle, but not at start/end
-            //  4. No empty labels (consecutive dots)
             let domain = self.domain.replace(".", r"\.");
-            let pat = format!(
-                r#"(?<subdomain>([[:alnum:]](?:[[:alnum:]-]*[[:alnum:]])?)(?:\.[[:alnum:]](?:[[:alnum:]-]*[[:alnum:]])?)*\.{domain}) &#8250;"#,
-            );
+            let pat = format!(r#"(?<subdomain>{SUBDOMAIN_RE_STR}\.{domain}) &#8250;"#);
+
             // fail to compile regex is fatal since we can't not proceed without it
             Regex::new(&pat).expect("failed to compile regex")
         });
@@ -57,6 +51,7 @@ impl Extract for Google {
 impl Search for Google {
     const NAME: &str = "Google";
     const BASE_URL: &str = "https://www.google.com/search";
+    const MAX_PAGES: usize = 20;
 
     /// Constructs a search query for subdomain enumeration
     ///
@@ -87,10 +82,11 @@ impl Search for Google {
         query: &str,
         page: usize,
     ) -> Result<Response, reqwest::Error> {
-        // Starting position for pagination, (with `PER_PAGE` = 20):
-        // - page = 0 -> start = 0  (results 1-20)
-        // - page = 1 -> start = 20 (results 21-40)
-        // - page = 2 -> start = 40 (results 41-60)
+        // Google's search pagination uses a 0-based index.
+        // For `PER_PAGE` = 20, the pagination is as follows:
+        // `page` = 0 (1st page): start=0  (results 1-20)
+        // `page` = 1 (2nd page): start=20 (results 21-40)
+        // `page` = 2 (3rd page): start=40 (results 41-60)
         // and so on...
         let start = page * PER_PAGE;
 
@@ -111,21 +107,40 @@ impl Search for Google {
 
 #[cfg(test)]
 mod tests {
+
     use rstest::rstest;
 
     use super::*;
 
     #[rstest]
-    #[case::empty(vec![], "site:example.com -www.example.com")]
-    #[case::single(vec!["app.example.com"], "site:example.com -www.example.com -app.example.com")]
-    // #[case::multiple(vec!["app.example.com", "api.example.com"], "site:example.com -www.example.com -app.example.com -api.example.com")]
-    fn test_generate_query(#[case] subdomains: Vec<&'static str>, #[case] expected: &str) {
+    #[case::empty(HashSet::new(), "site:example.com -www.example.com")]
+    #[case::single(
+        HashSet::from(["app.example.com".to_owned()]), 
+        "site:example.com -www.example.com -app.example.com"
+    )]
+    fn test_generate_query(#[case] subdomains: HashSet<String>, #[case] expected: &str) {
         let domain = "example.com";
         let google = Google::new(domain);
 
-        let subdomains = subdomains.into_iter().map(|s| s.to_owned()).collect();
-
         assert_eq!(google.generate_query(&subdomains), expected);
+    }
+
+    #[test]
+    fn test_generate_query_multiple() {
+        let domain = "example.com";
+        let subdomains = HashSet::from([
+            "first.example.com".to_owned(),
+            "second.example.com".to_owned(),
+        ]);
+        let google = Google::new(domain);
+        let query = google.generate_query(&subdomains);
+
+        let (expected1, expected2) = (
+            "site:example.com -www.example.com -first.example.com -second.example.com",
+            "site:example.com -www.example.com -second.example.com -first.example.com",
+        );
+
+        assert!(query == expected1 || query == expected2);
     }
 
     #[rstest]
