@@ -2,16 +2,21 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use enum_dispatch::enum_dispatch;
-pub(crate) use google::Google;
+pub(crate) use enumerate_derive::Extract;
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, HeaderMap, HeaderValue};
 use reqwest::{Client, Response};
 use tracing::{info, trace, warn};
-pub(crate) use yahoo::Yahoo;
 
+pub(crate) use self::bing::Bing;
+pub(crate) use self::google::Google;
+pub(crate) use self::yahoo::Yahoo;
+
+pub(crate) mod bing;
 pub(crate) mod google;
 pub(crate) mod yahoo;
 
-const MAX_RETRIES: usize = 5;
+const MAX_RETRIES: usize = 8;
+const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
 /// regex pattern for a subdomain
 /// It ensures proper domain name format:
@@ -45,6 +50,7 @@ pub(crate) fn defaults_headers() -> HeaderMap {
 pub(crate) enum Engine {
     Google,
     Yahoo,
+    Bing,
 }
 
 #[enum_dispatch]
@@ -98,12 +104,15 @@ where
         let mut found = 0;
         let mut subdomains = HashSet::new();
 
-        #[allow(unused_variables, non_snake_case)]
+        #[allow(non_snake_case)]
         let Settings {
             name: NAME,
             max_pages: MAX_PAGES,
             ..
         } = self.engine.settings();
+
+        // Record the name as part of the current span.
+        tracing::Span::current().record("NAME", NAME);
 
         loop {
             trace!(page, found, retries, "searching");
@@ -114,7 +123,6 @@ where
 
             let query = self.engine.generate_query(&subdomains);
 
-            info!(query, "searching");
             let resp = match self
                 .engine
                 .search(client.clone(), &query, page)
@@ -124,15 +132,19 @@ where
                 Ok(r) => r,
                 Err(e) => {
                     warn!(err = ?e, "failed to search");
+                    tokio::time::sleep(Duration::from_secs(2)).await;
                     retries += 1;
                     continue;
                 }
             };
 
+            info!(url = resp.url().to_string(), "searching");
+
             let body = match resp.text().await {
                 Ok(b) => b,
                 Err(e) => {
                     warn!(err = ?e, "failed to parse search results");
+                    tokio::time::sleep(Duration::from_secs(2)).await;
                     retries += 1;
                     continue;
                 }

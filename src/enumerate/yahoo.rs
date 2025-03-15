@@ -1,12 +1,8 @@
 use std::collections::HashSet;
-use std::sync::OnceLock;
 
-use regex::Regex;
 use reqwest::{Client, Response, header};
 
-use super::{Extract, SUBDOMAIN_RE_STR, Search, Settings};
-
-static RE: OnceLock<Regex> = OnceLock::new();
+use super::{DEFAULT_USER_AGENT, Extract, SUBDOMAIN_RE_STR, Search, Settings};
 
 // Yahoo seems to always return 7 results per page.
 // Until we find a way to configure the number of results per page,
@@ -15,11 +11,14 @@ const PER_PAGE: usize = 7;
 const SETTINGS: Settings = Settings {
     name: "Yahoo",
     base_url: "https://search.yahoo.com/search",
-    user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    user_agent: DEFAULT_USER_AGENT,
     max_pages: 30,
 };
 
+#[derive(Extract)]
+#[extract(pattern = r#"<span>(?<subdomain>{SUBDOMAIN_RE_STR}\.{domain})<\/span>"#)]
 pub(crate) struct Yahoo {
+    #[extract(domain)]
     domain: String,
 }
 
@@ -29,23 +28,6 @@ impl Yahoo {
         Self {
             domain: domain.into(),
         }
-    }
-}
-
-impl Extract for Yahoo {
-    fn extract(&self, input: &str) -> HashSet<String> {
-        let re = RE.get_or_init(|| {
-            // Captures subdomains from Yahoo search result page, which is in HTML format.
-            let domain = self.domain.replace(".", r"\.");
-            let pat = format!(r#"<span>(?<subdomain>{SUBDOMAIN_RE_STR}\.{domain})<\/span>"#);
-
-            // fail to compile regex is fatal since we can't not proceed without it
-            Regex::new(&pat).expect("failed to compile regex")
-        });
-
-        re.captures_iter(input)
-            .map(|c| c["subdomain"].to_owned())
-            .collect()
     }
 }
 
@@ -78,7 +60,8 @@ impl Search for Yahoo {
 
         client
             .get(SETTINGS.base_url)
-            .query(&[("p", query), ("b", b.to_string().as_ref())])
+            .query(&[("p", query)])
+            .query(&[("b", b)])
             .header(header::USER_AGENT, SETTINGS.user_agent)
             .send()
             .await
@@ -145,7 +128,7 @@ mod tests {
         "#,
         vec!["first.example.com", "second.example.com", "fourth.third.example.com"]
     )]
-    fn test_extract_single_level(#[case] input: &str, #[case] expected: Vec<&str>) {
+    fn test_extract(#[case] input: &str, #[case] expected: Vec<&str>) {
         let yahoo = Yahoo::new("example.com");
         let results = yahoo.extract(input);
 

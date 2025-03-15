@@ -10,13 +10,11 @@ anyhow = "1.0.97"
 clap = "4.5.32"
 enum_dispatch = "0.3.13"
 regex = "1.11.1"
-reqwest = { version = "0.12.12", features = ["json", "gzip"] }
-# thiserror = "2.0.12"
-tokio = { version = "1.44.0", features = ["full"] }
+reqwest = { version = "0.12.14", features = ["json", "gzip", "cookies"] }
+tokio = { version = "1.44.1", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
-# hickory-resolver = "0.24.4"
-# scraper = "0.23.1"
+enumerate-derive = { path = "enumerate-derive" }
 
 [dev-dependencies]
 rstest = "0.25.0"

@@ -1,9 +1,7 @@
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
-use enumerate::google::Google;
-use enumerate::yahoo::Yahoo;
-use enumerate::{Engine, Enumerator, defaults_headers};
+use enumerate::{Bing, Engine, Enumerator, Google, Yahoo, defaults_headers};
 use reqwest::Client;
 use tracing::info;
 
@@ -15,11 +13,16 @@ pub async fn run(_input: &str) -> anyhow::Result<()> {
     info!("initializing client...");
     let client = Client::builder()
         .default_headers(defaults_headers())
+        .cookie_store(true)
         .gzip(true) // enable gzip compression
         .build()?;
 
-    let domain = "tesla.com";
-    let engines: Vec<Engine> = vec![Yahoo::new(domain).into(), Google::new(domain).into()];
+    let domain = "***REMOVED***";
+    let engines: Vec<Engine> = vec![
+        Yahoo::new(domain).into(),
+        Google::new(domain).into(),
+        Bing::new(domain).into(),
+    ];
     let subdomains = Arc::new(Mutex::new(HashSet::<String>::new()));
 
     let mut join_set = tokio::task::JoinSet::new();

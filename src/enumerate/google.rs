@@ -1,13 +1,9 @@
 use std::collections::HashSet;
-use std::sync::OnceLock;
 
-use regex::Regex;
 use reqwest::header::{self};
 use reqwest::{Client, Response};
 
-use super::{Extract, SUBDOMAIN_RE_STR, Search, Settings};
-
-static RE: OnceLock<Regex> = OnceLock::new();
+use super::{Extract, Search, Settings};
 
 const PER_PAGE: usize = 20;
 const SETTINGS: Settings = Settings {
@@ -25,7 +21,10 @@ const SETTINGS: Settings = Settings {
     max_pages: 20,
 };
 
+#[derive(Extract)]
+#[extract(pattern = r#"<span.*?>(?<subdomain>[[:alnum:]\-\.]*?\.{domain})\s&#8250;.*?<\/span>"#)]
 pub(crate) struct Google {
+    #[extract(domain)]
     domain: String,
 }
 
@@ -35,24 +34,6 @@ impl Google {
         Self {
             domain: domain.into(),
         }
-    }
-}
-
-impl Extract for Google {
-    fn extract(&self, input: &str) -> HashSet<String> {
-        let re = RE.get_or_init(|| {
-            // Captures subdomains from Google search result page, which is in HTML format.
-            // The pattern matches valid domain names followed by the HTML entity &#8250; (›)
-            let domain = self.domain.replace(".", r"\.");
-            let pat = format!(r#"(?<subdomain>{SUBDOMAIN_RE_STR}\.{domain}) &#8250;"#);
-
-            // fail to compile regex is fatal since we can't not proceed without it
-            Regex::new(&pat).expect("failed to compile regex")
-        });
-
-        re.captures_iter(input)
-            .map(|c| c["subdomain"].to_owned())
-            .collect()
     }
 }
 
@@ -100,13 +81,11 @@ impl Search for Google {
 
         client
             .get(SETTINGS.base_url)
-            .query(&[
-                ("q", query),
-                ("hl", "en-US"),
-                ("num", PER_PAGE.to_string().as_ref()), // number of search results per page
-                ("start", start.to_string().as_ref()),  // starting position for pagination
-                ("filter", "0"), // duplicates content filter, 0 = include duplicates
-            ])
+            .query(&[("q", query)])
+            .query(&[("hl", "en-US")])
+            .query(&[("num", PER_PAGE)]) // number of search results per page
+            .query(&[("start", start)]) // starting position for pagination
+            .query(&[("filter", "0")]) // duplicates content filter, 0 = include duplicates
             .header(header::USER_AGENT, SETTINGS.user_agent)
             .send()
             .await
@@ -155,26 +134,26 @@ mod tests {
     #[case::empty("", vec![])]
     #[case::no_matches("no matches found", vec![])]
     #[case::basic(
-        r#"<div>app.example.com &#8250; Text</div>"#,
+        r#"<span>app.example.com &#8250; Text</span>"#,
         vec!["app.example.com"]
     )]
     #[case::with_hyphens(
-        r#"<div>with-hypen.example.com &#8250; Text</div>"#,
+        r#"<span class="cite">with-hypen.example.com &#8250; Text</span>"#,
         vec!["with-hypen.example.com"]
     )]
     #[case::multi_level(
-        r#"<div>level1.level2.example.com &#8250; Text</div>"#,
+        r#"<span>level1.level2.example.com &#8250; Text</span>"#,
         vec!["level1.level2.example.com"]
     )]
     #[case::multi_matches(
         r#"
-        <div>first.example.com &#8250; Text</div>
-        <div>second.example.com &#8250; Text</div>
-        <div>fourth.third.example.com &#8250; Text</div>
+        <span>first.example.com &#8250; Text</span>
+        <span>second.example.com &#8250; Text</span>
+        <span>fourth.third.example.com &#8250; Text</span>
         "#,
         vec!["first.example.com", "second.example.com", "fourth.third.example.com"]
     )]
-    fn test_extract_single_level(#[case] input: &str, #[case] expected: Vec<&str>) {
+    fn test_extract(#[case] input: &str, #[case] expected: Vec<&str>) {
         let google = Google::new("example.com");
         let results = google.extract(input);
 
