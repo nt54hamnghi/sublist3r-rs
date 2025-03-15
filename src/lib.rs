@@ -1,15 +1,24 @@
+#![allow(unused)]
+
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
-use enumerate::{Bing, Engine, Enumerator, Google, Yahoo, defaults_headers};
+use enumerate::{Baidu, Bing, DNSDumpster, Engine, Enumerator, Google, Yahoo, defaults_headers};
 use reqwest::Client;
 use tracing::info;
 
 mod enumerate;
 
-#[allow(unused)]
 #[tracing::instrument(skip_all)]
 pub async fn run(_input: &str) -> anyhow::Result<()> {
+    enumerate().await
+}
+
+async fn test_run() -> anyhow::Result<()> {
+    Ok(())
+}
+
+async fn enumerate() -> anyhow::Result<()> {
     info!("initializing client...");
     let client = Client::builder()
         .default_headers(defaults_headers())
@@ -19,9 +28,11 @@ pub async fn run(_input: &str) -> anyhow::Result<()> {
 
     let domain = "***REMOVED***";
     let engines: Vec<Engine> = vec![
-        Yahoo::new(domain).into(),
-        Google::new(domain).into(),
-        Bing::new(domain).into(),
+        // Yahoo::new(domain).into(),
+        // Google::new(domain).into(),
+        // Baidu::new(domain).into(),
+        // Bing::new(domain).into(),
+        DNSDumpster::new(domain).into(),
     ];
     let subdomains = Arc::new(Mutex::new(HashSet::<String>::new()));
 
@@ -30,7 +41,7 @@ pub async fn run(_input: &str) -> anyhow::Result<()> {
         let r = subdomains.clone();
         let c = client.clone();
         join_set.spawn(async move {
-            let mut e = Enumerator::new(ng);
+            let e = Enumerator::new(ng);
             let found = e.enumerate(c).await;
             let mut guard = r.lock().unwrap();
             guard.extend(found.into_iter());

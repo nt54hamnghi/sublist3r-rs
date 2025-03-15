@@ -29,4 +29,4 @@ path = "src/main.rs"
 
 [lints.rust]
 unsafe_code = "forbid"
-# unused = "allow"
+# unused = { level = "allow", priority = -1 }

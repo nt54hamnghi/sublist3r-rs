@@ -7,11 +7,15 @@ use reqwest::header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, HeaderMap, Heade
 use reqwest::{Client, Response};
 use tracing::{info, trace, warn};
 
+pub(crate) use self::baidu::Baidu;
 pub(crate) use self::bing::Bing;
+pub(crate) use self::dnsdumpster::DNSDumpster;
 pub(crate) use self::google::Google;
 pub(crate) use self::yahoo::Yahoo;
 
+pub(crate) mod baidu;
 pub(crate) mod bing;
+pub(crate) mod dnsdumpster;
 pub(crate) mod google;
 pub(crate) mod yahoo;
 
@@ -47,9 +51,11 @@ pub(crate) fn defaults_headers() -> HeaderMap {
 
 #[enum_dispatch(Extract, Search)]
 pub(crate) enum Engine {
+    Baidu,
+    Bing,
+    DNSDumpster,
     Google,
     Yahoo,
-    Bing,
 }
 
 #[enum_dispatch]
@@ -119,7 +125,7 @@ where
 
         loop {
             trace!(page, found, retries, "searching");
-            if page > MAX_PAGES || retries > MAX_RETRIES || backoff_secs > MAX_BACKOFF {
+            if page >= MAX_PAGES || retries >= MAX_RETRIES || backoff_secs >= MAX_BACKOFF {
                 info!(retries, page, "completed");
                 break;
             }
