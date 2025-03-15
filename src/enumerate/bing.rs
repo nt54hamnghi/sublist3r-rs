@@ -61,6 +61,7 @@ impl Search for Bing {
             .header(header::USER_AGENT, SETTINGS.user_agent)
             .header(header::ACCEPT, "text/html")
             .header("X-MSEdge-ClientID", X_MSEDGE_CLIENT_ID)
+            .header("Pragma", "no-cache")
             .send()
             .await
     }
@@ -81,7 +82,7 @@ mod tests {
         vec!["app.example.com"]
     )]
     #[case::basic_with_extra_text(
-        r#"<cite>https://app.example.com</cite> - Bing"#,
+        r#"<cite><cite>https://app.example.com - App</cite> - Bing</cite>"#,
         vec!["app.example.com"]
     )]
     #[case::with_hyphens(

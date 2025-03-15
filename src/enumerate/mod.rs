@@ -15,7 +15,6 @@ pub(crate) mod bing;
 pub(crate) mod google;
 pub(crate) mod yahoo;
 
-const MAX_RETRIES: usize = 8;
 const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
 /// regex pattern for a subdomain
@@ -93,6 +92,9 @@ where
     }
 }
 
+const MAX_RETRIES: u8 = 10;
+const MAX_BACKOFF: u8 = 16;
+
 impl<E> Enumerator<E>
 where
     E: Search + Extract,
@@ -101,6 +103,7 @@ where
     pub async fn enumerate(self, client: Client) -> HashSet<String> {
         let mut page = 0;
         let mut retries = 0;
+        let mut backoff_secs = 1;
         let mut found = 0;
         let mut subdomains = HashSet::new();
 
@@ -116,7 +119,7 @@ where
 
         loop {
             trace!(page, found, retries, "searching");
-            if retries > MAX_RETRIES || page > MAX_PAGES {
+            if page > MAX_PAGES || retries > MAX_RETRIES || backoff_secs > MAX_BACKOFF {
                 info!(retries, page, "completed");
                 break;
             }
@@ -131,9 +134,10 @@ where
             {
                 Ok(r) => r,
                 Err(e) => {
-                    warn!(err = ?e, "failed to search");
-                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    warn!(err = ?e, backoff = backoff_secs, "failed to search");
+                    tokio::time::sleep(Duration::from_secs(backoff_secs as u64)).await;
                     retries += 1;
+                    backoff_secs *= 2;
                     continue;
                 }
             };
@@ -144,7 +148,6 @@ where
                 Ok(b) => b,
                 Err(e) => {
                     warn!(err = ?e, "failed to parse search results");
-                    tokio::time::sleep(Duration::from_secs(2)).await;
                     retries += 1;
                     continue;
                 }
@@ -158,15 +161,15 @@ where
 
             if found != subdomains.len() {
                 found = subdomains.len();
-                // subtracts 1 and saturates at 0 instead of underflowing if the result would be negative.
-                retries = retries.saturating_sub(1);
+                // subtracts 2 and saturates at 0 instead of underflowing if the result would be negative.
+                retries = retries.saturating_sub(2);
             } else {
+                page += 1;
                 retries += 1;
             }
-            page += 1;
 
             // Sleep after each page to avoid being blocked
-            tokio::time::sleep(Duration::from_millis(200)).await;
+            tokio::time::sleep(Duration::from_millis(500)).await;
         }
 
         subdomains
