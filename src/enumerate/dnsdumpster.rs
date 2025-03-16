@@ -27,12 +27,6 @@ pub struct DNSDumpster {
     once: bool,
 }
 
-impl Pagination for DNSDumpster {
-    fn stop(&self) -> bool {
-        self.once
-    }
-}
-
 impl DNSDumpster {
     pub fn new(domain: impl Into<String>) -> Self {
         // TODO: validate domain
@@ -58,6 +52,12 @@ impl DNSDumpster {
     }
 }
 
+impl Pagination for DNSDumpster {
+    fn stop(&self) -> bool {
+        self.once
+    }
+}
+
 impl Search for DNSDumpster {
     fn generate_query(&self, subdomains: &HashSet<String>) -> String {
         self.domain.clone()
@@ -70,8 +70,8 @@ impl Search for DNSDumpster {
     async fn search(
         &mut self,
         client: Client,
-        query: &str,
-        page: usize,
+        _: &str,
+        _: usize,
     ) -> Result<Response, reqwest::Error> {
         // default token to an empty string,
         // which will cause 401 Unauthorized when the post request is made

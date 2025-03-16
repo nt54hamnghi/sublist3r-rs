@@ -11,6 +11,8 @@ use super::{DEFAULT_USER_AGENT, Extract, Pagination, Search, Settings};
 const PER_PAGE: usize = 10;
 const SETTINGS: Settings = Settings {
     name: "VirusTotal",
+    // the complete url is:
+    // https://www.virustotal.com/ui/domains/{domain}/relationships/subdomains
     base_url: "https://www.virustotal.com/ui/domains",
     user_agent: DEFAULT_USER_AGENT,
     max_pages: 20,
@@ -21,22 +23,9 @@ pub struct VirusTotal {
     meta: Option<Meta>,
 }
 
-impl Pagination for VirusTotal {
-    async fn delay(&self) {
-        let dur = Duration::from_millis(1500);
-        tokio::time::sleep(dur).await;
-    }
-
-    fn stop(&self) -> bool {
-        match &self.meta {
-            Some(m) => m.cursor.is_none(),
-            None => false,
-        }
-    }
-}
-
 impl VirusTotal {
     pub fn new(domain: impl Into<String>) -> Self {
+        // TODO: validate domain
         Self {
             domain: domain.into(),
             meta: None,
@@ -85,6 +74,20 @@ impl Extract for VirusTotal {
                 r.data
             }
             Err(_) => HashSet::new(),
+        }
+    }
+}
+
+impl Pagination for VirusTotal {
+    async fn delay(&self) {
+        let dur = Duration::from_millis(1500);
+        tokio::time::sleep(dur).await;
+    }
+
+    fn stop(&self) -> bool {
+        match &self.meta {
+            Some(m) => m.cursor.is_none(),
+            None => false,
         }
     }
 }

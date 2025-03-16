@@ -8,12 +8,14 @@ use reqwest::{Client, Response};
 use tracing::{info, trace, warn};
 
 pub use self::bing::Bing;
+pub use self::crtsh::CrtSh;
 pub use self::dnsdumpster::DNSDumpster;
 pub use self::google::Google;
 pub use self::virustotal::VirusTotal;
 pub use self::yahoo::Yahoo;
 
 pub mod bing;
+pub mod crtsh;
 pub mod dnsdumpster;
 pub mod google;
 pub mod virustotal;
@@ -52,6 +54,7 @@ pub(crate) fn defaults_headers() -> HeaderMap {
 #[enum_dispatch(Extract, Pagination, Search)]
 pub enum Engine {
     Bing,
+    CrtSh,
     DNSDumpster,
     Google,
     VirusTotal,

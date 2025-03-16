@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
-use enumerate::{Baidu, Bing, DNSDumpster, Engine, Enumerator, Google, VirusTotal, Yahoo,
+use enumerate::{Bing, CrtSh, DNSDumpster, Engine, Enumerator, Google, VirusTotal, Yahoo,
                 defaults_headers};
 use reqwest::Client;
 use tracing::info;
@@ -29,12 +29,12 @@ async fn enumerate() -> anyhow::Result<()> {
 
     let domain = "***REMOVED***";
     let engines: Vec<Engine> = vec![
-        // Google::new(domain).into(),
-        // Yahoo::new(domain).into(),
-        // Bing::new(domain).into(),
-        // Baidu::new(domain).into(),
+        Google::new(domain).into(),
+        Yahoo::new(domain).into(),
+        Bing::new(domain).into(),
         DNSDumpster::new(domain).into(),
         VirusTotal::new(domain).into(),
+        CrtSh::new(domain).into(),
     ];
     let subdomains = Arc::new(Mutex::new(HashSet::<String>::new()));
 
