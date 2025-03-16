@@ -5,10 +5,10 @@ use reqwest::{Client, Response, header};
 use super::{Extract, Search, Settings, Stop};
 
 const PER_PAGE: usize = 10;
+// https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search/reference/headers
 const SETTINGS: Settings = Settings {
     name: "Bing",
     base_url: "https://www.bing.com/search",
-    // https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search/reference/headers
     user_agent: "Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; Touch; rv:11.0) like Gecko",
     max_pages: 20,
 };
@@ -17,13 +17,13 @@ const X_MSEDGE_CLIENT_ID: &str = "sublist3r-rs-bing";
 
 #[derive(Extract)]
 #[extract(pattern = r#"<cite>https:\/\/(?<subdomain>.*?\.{domain}).*?<\/cite>"#)]
-pub(crate) struct Bing {
+pub struct Bing {
     #[extract(domain)]
     domain: String,
 }
 
 impl Bing {
-    pub(crate) fn new(domain: impl Into<String>) -> Self {
+    pub fn new(domain: impl Into<String>) -> Self {
         // TODO: validate domain
         Self {
             domain: domain.into(),
@@ -35,7 +35,6 @@ impl Stop for Bing {}
 
 impl Search for Bing {
     fn generate_query(&self, subdomains: &HashSet<String>) -> String {
-        // TODO: consider limiting the number of subdomains to exclude
         let found = subdomains
             .iter()
             .fold(String::new(), |acc, d| format!("{} -{}", acc, d));

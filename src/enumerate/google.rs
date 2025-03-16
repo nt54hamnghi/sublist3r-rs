@@ -23,13 +23,13 @@ const SETTINGS: Settings = Settings {
 
 #[derive(Extract)]
 #[extract(pattern = r#"<span.*?>(?<subdomain>[[:alnum:]\-\.]*?\.{domain})\s&#8250;.*?<\/span>"#)]
-pub(crate) struct Google {
+pub struct Google {
     #[extract(domain)]
     domain: String,
 }
 
 impl Google {
-    pub(crate) fn new(domain: impl Into<String>) -> Self {
+    pub fn new(domain: impl Into<String>) -> Self {
         // TODO: validate domain
         Self {
             domain: domain.into(),

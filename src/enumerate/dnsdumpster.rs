@@ -21,7 +21,7 @@ static INIT_TOKEN_RE: LazyLock<Regex> = LazyLock::new(|| {
 
 #[derive(Extract)]
 #[extract(pattern = r#"<td>(?<subdomain>.*?\.{domain})<\/td>"#)]
-pub(crate) struct DNSDumpster {
+pub struct DNSDumpster {
     #[extract(domain)]
     domain: String,
 }
@@ -29,7 +29,7 @@ pub(crate) struct DNSDumpster {
 impl Stop for DNSDumpster {}
 
 impl DNSDumpster {
-    pub(crate) fn new(domain: impl Into<String>) -> Self {
+    pub fn new(domain: impl Into<String>) -> Self {
         // TODO: validate domain
         Self {
             domain: domain.into(),

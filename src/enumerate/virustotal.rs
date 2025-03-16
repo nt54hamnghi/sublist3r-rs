@@ -16,7 +16,7 @@ const SETTINGS: Settings = Settings {
     max_pages: 20,
 };
 
-pub(crate) struct VirusTotal {
+pub struct VirusTotal {
     domain: String,
     meta: Option<Meta>,
 }
@@ -31,7 +31,7 @@ impl Stop for VirusTotal {
 }
 
 impl VirusTotal {
-    pub(crate) fn new(domain: impl Into<String>) -> Self {
+    pub fn new(domain: impl Into<String>) -> Self {
         Self {
             domain: domain.into(),
             meta: None,

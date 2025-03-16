@@ -2,24 +2,22 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use enum_dispatch::enum_dispatch;
-pub(crate) use enumerate_derive::Extract;
+pub use enumerate_derive::Extract;
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, HeaderMap, HeaderValue};
 use reqwest::{Client, Response};
 use tracing::{info, trace, warn};
 
-pub(crate) use self::baidu::Baidu;
-pub(crate) use self::bing::Bing;
-pub(crate) use self::dnsdumpster::DNSDumpster;
-pub(crate) use self::google::Google;
-pub(crate) use self::virustotal::VirusTotal;
-pub(crate) use self::yahoo::Yahoo;
+pub use self::bing::Bing;
+pub use self::dnsdumpster::DNSDumpster;
+pub use self::google::Google;
+pub use self::virustotal::VirusTotal;
+pub use self::yahoo::Yahoo;
 
-pub(crate) mod baidu;
-pub(crate) mod bing;
-pub(crate) mod dnsdumpster;
-pub(crate) mod google;
-pub(crate) mod virustotal;
-pub(crate) mod yahoo;
+pub mod bing;
+pub mod dnsdumpster;
+pub mod google;
+pub mod virustotal;
+pub mod yahoo;
 
 const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
@@ -52,8 +50,7 @@ pub(crate) fn defaults_headers() -> HeaderMap {
 }
 
 #[enum_dispatch(Extract, Search, Stop)]
-pub(crate) enum Engine {
-    Baidu,
+pub enum Engine {
     Bing,
     DNSDumpster,
     Google,
@@ -62,12 +59,12 @@ pub(crate) enum Engine {
 }
 
 #[enum_dispatch]
-pub(crate) trait Extract {
+pub trait Extract {
     fn extract(&mut self, input: &str) -> HashSet<String>;
 }
 
 /// Settings for a Search Engine
-pub(crate) struct Settings {
+pub struct Settings {
     name: &'static str,
     base_url: &'static str,
     user_agent: &'static str,
@@ -75,7 +72,7 @@ pub(crate) struct Settings {
 }
 
 #[enum_dispatch]
-pub(crate) trait Search {
+pub trait Search {
     fn generate_query(&self, subdomains: &HashSet<String>) -> String;
 
     fn settings(&self) -> Settings;
@@ -89,13 +86,13 @@ pub(crate) trait Search {
 }
 
 #[enum_dispatch]
-pub(crate) trait Stop {
+pub trait Stop {
     fn stop(&self) -> bool {
         false
     }
 }
 
-pub(crate) struct Enumerator<E> {
+pub struct Enumerator<E> {
     engine: E,
 }
 

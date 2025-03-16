@@ -17,13 +17,13 @@ const SETTINGS: Settings = Settings {
 
 #[derive(Extract)]
 #[extract(pattern = r#"<span>(?<subdomain>{SUBDOMAIN_RE_STR}\.{domain})<\/span>"#)]
-pub(crate) struct Yahoo {
+pub struct Yahoo {
     #[extract(domain)]
     domain: String,
 }
 
 impl Yahoo {
-    pub(crate) fn new(domain: impl Into<String>) -> Self {
+    pub fn new(domain: impl Into<String>) -> Self {
         // TODO: validate domain
         Self {
             domain: domain.into(),
@@ -35,9 +35,9 @@ impl Stop for Yahoo {}
 
 impl Search for Yahoo {
     fn generate_query(&self, subdomains: &HashSet<String>) -> String {
-        // TODO: consider limiting the number of subdomains to exclude
         let found = subdomains
             .iter()
+            .take(15)
             .fold(String::new(), |acc, d| format!("{} -domain:{}", acc, d));
 
         format!("site:{0} -domain:www.{0}{1}", self.domain, found)
