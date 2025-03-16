@@ -11,12 +11,14 @@ pub(crate) use self::baidu::Baidu;
 pub(crate) use self::bing::Bing;
 pub(crate) use self::dnsdumpster::DNSDumpster;
 pub(crate) use self::google::Google;
+pub(crate) use self::virustotal::VirusTotal;
 pub(crate) use self::yahoo::Yahoo;
 
 pub(crate) mod baidu;
 pub(crate) mod bing;
 pub(crate) mod dnsdumpster;
 pub(crate) mod google;
+pub(crate) mod virustotal;
 pub(crate) mod yahoo;
 
 const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
@@ -55,6 +57,7 @@ pub(crate) enum Engine {
     Bing,
     DNSDumpster,
     Google,
+    VirusTotal,
     Yahoo,
 }
 
