@@ -49,7 +49,7 @@ pub(crate) fn defaults_headers() -> HeaderMap {
     headers
 }
 
-#[enum_dispatch(Extract, Search, Stop)]
+#[enum_dispatch(Extract, Pagination, Search)]
 pub enum Engine {
     Bing,
     DNSDumpster,
@@ -86,7 +86,12 @@ pub trait Search {
 }
 
 #[enum_dispatch]
-pub trait Stop {
+pub trait Pagination: Search {
+    async fn delay(&self) {
+        let dur = Duration::from_millis(500);
+        tokio::time::sleep(dur).await;
+    }
+
     fn stop(&self) -> bool {
         false
     }
@@ -98,7 +103,7 @@ pub struct Enumerator<E> {
 
 impl<E> Enumerator<E>
 where
-    E: Search + Extract + Stop,
+    E: Pagination + Extract,
 {
     pub fn new(engine: E) -> Self {
         Self { engine }
@@ -110,7 +115,7 @@ const MAX_BACKOFF: u8 = 16;
 
 impl<E> Enumerator<E>
 where
-    E: Search + Extract + Stop,
+    E: Pagination + Extract,
 {
     #[tracing::instrument(skip_all, fields(NAME))]
     pub async fn enumerate(mut self, client: Client) -> HashSet<String> {
@@ -185,8 +190,8 @@ where
                 retries += 1;
             }
 
-            // Sleep after each page to avoid being blocked
-            tokio::time::sleep(Duration::from_millis(500)).await;
+            // delay after each page to avoid being blocked
+            self.engine.delay().await;
         }
 
         subdomains

@@ -6,7 +6,7 @@ use base64::prelude::BASE64_STANDARD;
 use reqwest::{Client, Response, header};
 use serde::{Deserialize, Deserializer};
 
-use super::{DEFAULT_USER_AGENT, Extract, Search, Settings, Stop};
+use super::{DEFAULT_USER_AGENT, Extract, Pagination, Search, Settings};
 
 const PER_PAGE: usize = 10;
 const SETTINGS: Settings = Settings {
@@ -21,7 +21,12 @@ pub struct VirusTotal {
     meta: Option<Meta>,
 }
 
-impl Stop for VirusTotal {
+impl Pagination for VirusTotal {
+    async fn delay(&self) {
+        let dur = Duration::from_millis(1500);
+        tokio::time::sleep(dur).await;
+    }
+
     fn stop(&self) -> bool {
         match &self.meta {
             Some(m) => m.cursor.is_none(),
@@ -109,7 +114,7 @@ impl Search for VirusTotal {
         url: &str,
         _: usize,
     ) -> Result<Response, reqwest::Error> {
-        let response = client
+        client
             .get(url)
             .query(&[("limit", PER_PAGE)])
             .header(header::USER_AGENT, SETTINGS.user_agent)
@@ -123,11 +128,7 @@ impl Search for VirusTotal {
                 VirusTotal::compute_anti_abuse_header(),
             )
             .send()
-            .await;
-
-        tokio::time::sleep(Duration::from_secs(1)).await;
-
-        response
+            .await
     }
 }
 

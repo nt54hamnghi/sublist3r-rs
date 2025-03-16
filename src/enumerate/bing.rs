@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use reqwest::{Client, Response, header};
 
-use super::{Extract, Search, Settings, Stop};
+use super::{Extract, Pagination, Search, Settings};
 
 const PER_PAGE: usize = 10;
 // https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search/reference/headers
@@ -31,7 +31,7 @@ impl Bing {
     }
 }
 
-impl Stop for Bing {}
+impl Pagination for Bing {}
 
 impl Search for Bing {
     fn generate_query(&self, subdomains: &HashSet<String>) -> String {

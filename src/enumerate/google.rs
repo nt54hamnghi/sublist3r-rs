@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use reqwest::header::{self};
 use reqwest::{Client, Response};
 
-use super::{Extract, Search, Settings, Stop};
+use super::{Extract, Pagination, Search, Settings};
 
 const PER_PAGE: usize = 20;
 const SETTINGS: Settings = Settings {
@@ -37,7 +37,7 @@ impl Google {
     }
 }
 
-impl Stop for Google {}
+impl Pagination for Google {}
 
 impl Search for Google {
     /// Constructs a search query for subdomain enumeration
