@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use reqwest::header::{self};
 use reqwest::{Client, Response};
 
-use super::{Extract, Search, Settings};
+use super::{Extract, Search, Settings, Stop};
 
 const PER_PAGE: usize = 20;
 const SETTINGS: Settings = Settings {
@@ -36,6 +36,8 @@ impl Google {
         }
     }
 }
+
+impl Stop for Google {}
 
 impl Search for Google {
     /// Constructs a search query for subdomain enumeration
@@ -154,7 +156,7 @@ mod tests {
         vec!["first.example.com", "second.example.com", "fourth.third.example.com"]
     )]
     fn test_extract(#[case] input: &str, #[case] expected: Vec<&str>) {
-        let google = Google::new("example.com");
+        let mut google = Google::new("example.com");
         let results = google.extract(input);
 
         let expected: HashSet<String> = expected.into_iter().map(String::from).collect();

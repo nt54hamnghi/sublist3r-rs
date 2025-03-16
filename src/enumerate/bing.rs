@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use reqwest::{Client, Response, header};
 
-use super::{Extract, Search, Settings};
+use super::{Extract, Search, Settings, Stop};
 
 const PER_PAGE: usize = 10;
 const SETTINGS: Settings = Settings {
@@ -30,6 +30,8 @@ impl Bing {
         }
     }
 }
+
+impl Stop for Bing {}
 
 impl Search for Bing {
     fn generate_query(&self, subdomains: &HashSet<String>) -> String {
@@ -102,7 +104,7 @@ mod tests {
         vec!["first.example.com", "second.example.com", "fourth.third.example.com"]
     )]
     fn test_extract(#[case] input: &str, #[case] expected: Vec<&str>) {
-        let bing = Bing::new("example.com");
+        let mut bing = Bing::new("example.com");
         let results = bing.extract(input);
 
         let expected: HashSet<String> = expected.into_iter().map(String::from).collect();

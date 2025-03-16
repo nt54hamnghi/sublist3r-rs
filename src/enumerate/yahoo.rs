@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use reqwest::{Client, Response, header};
 
-use super::{DEFAULT_USER_AGENT, Extract, SUBDOMAIN_RE_STR, Search, Settings};
+use super::{DEFAULT_USER_AGENT, Extract, SUBDOMAIN_RE_STR, Search, Settings, Stop};
 
 // Yahoo seems to always return 7 results per page.
 // Until we find a way to configure the number of results per page,
@@ -30,6 +30,8 @@ impl Yahoo {
         }
     }
 }
+
+impl Stop for Yahoo {}
 
 impl Search for Yahoo {
     fn generate_query(&self, subdomains: &HashSet<String>) -> String {
@@ -129,7 +131,7 @@ mod tests {
         vec!["first.example.com", "second.example.com", "fourth.third.example.com"]
     )]
     fn test_extract(#[case] input: &str, #[case] expected: Vec<&str>) {
-        let yahoo = Yahoo::new("example.com");
+        let mut yahoo = Yahoo::new("example.com");
         let results = yahoo.extract(input);
 
         let expected: HashSet<String> = expected.into_iter().map(String::from).collect();

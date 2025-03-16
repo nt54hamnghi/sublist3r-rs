@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 use regex::Regex;
 use reqwest::{Client, Response, header};
 
-use super::{DEFAULT_USER_AGENT, Extract, Search, Settings};
+use super::{DEFAULT_USER_AGENT, Extract, Search, Settings, Stop};
 
 const API_URL: &str = "https://api.dnsdumpster.com/htmld/";
 const SETTINGS: Settings = Settings {
@@ -25,6 +25,8 @@ pub(crate) struct DNSDumpster {
     #[extract(domain)]
     domain: String,
 }
+
+impl Stop for DNSDumpster {}
 
 impl DNSDumpster {
     pub(crate) fn new(domain: impl Into<String>) -> Self {

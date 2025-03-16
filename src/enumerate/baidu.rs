@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use reqwest::{Client, Response, header};
 
-use super::{DEFAULT_USER_AGENT, Extract, Search, Settings};
+use super::{DEFAULT_USER_AGENT, Extract, Search, Settings, Stop};
 
 const PER_PAGE: usize = 10;
 const SETTINGS: Settings = Settings {
@@ -29,6 +29,8 @@ impl Baidu {
         }
     }
 }
+
+impl Stop for Baidu {}
 
 impl Search for Baidu {
     fn generate_query(&self, subdomains: &HashSet<String>) -> String {

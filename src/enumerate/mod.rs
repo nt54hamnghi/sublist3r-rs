@@ -49,7 +49,7 @@ pub(crate) fn defaults_headers() -> HeaderMap {
     headers
 }
 
-#[enum_dispatch(Extract, Search)]
+#[enum_dispatch(Extract, Search, Stop)]
 pub(crate) enum Engine {
     Baidu,
     Bing,
@@ -60,7 +60,7 @@ pub(crate) enum Engine {
 
 #[enum_dispatch]
 pub(crate) trait Extract {
-    fn extract(&self, input: &str) -> HashSet<String>;
+    fn extract(&mut self, input: &str) -> HashSet<String>;
 }
 
 /// Settings for a Search Engine
@@ -85,13 +85,20 @@ pub(crate) trait Search {
     ) -> Result<Response, reqwest::Error>;
 }
 
+#[enum_dispatch]
+pub(crate) trait Stop {
+    fn stop(&self) -> bool {
+        false
+    }
+}
+
 pub(crate) struct Enumerator<E> {
     engine: E,
 }
 
 impl<E> Enumerator<E>
 where
-    E: Search + Extract,
+    E: Search + Extract + Stop,
 {
     pub fn new(engine: E) -> Self {
         Self { engine }
@@ -103,10 +110,10 @@ const MAX_BACKOFF: u8 = 16;
 
 impl<E> Enumerator<E>
 where
-    E: Search + Extract,
+    E: Search + Extract + Stop,
 {
     #[tracing::instrument(skip_all, fields(NAME))]
-    pub async fn enumerate(self, client: Client) -> HashSet<String> {
+    pub async fn enumerate(mut self, client: Client) -> HashSet<String> {
         let mut page = 0;
         let mut retries = 0;
         let mut backoff_secs = 1;
@@ -125,7 +132,11 @@ where
 
         loop {
             trace!(page, found, retries, "searching");
-            if page >= MAX_PAGES || retries >= MAX_RETRIES || backoff_secs >= MAX_BACKOFF {
+            if page >= MAX_PAGES
+                || self.engine.stop()
+                || retries >= MAX_RETRIES
+                || backoff_secs >= MAX_BACKOFF
+            {
                 info!(retries, page, "completed");
                 break;
             }

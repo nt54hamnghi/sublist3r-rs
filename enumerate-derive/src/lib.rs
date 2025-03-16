@@ -73,7 +73,7 @@ fn impl_extract_trait(item: TokenStream) -> darling::Result<TokenStream> {
         static __RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
 
         impl #impl_generics Extract for #ident #type_generics #where_clause {
-            fn extract(&self, input: &str) -> std::collections::HashSet<std::string::String> {
+            fn extract(&mut self, input: &str) -> std::collections::HashSet<std::string::String> {
                 let re = __RE.get_or_init(|| {
                     let domain = self.#domain_ident.replace(".", r"\.");
                     let pat = format!(#pattern);
