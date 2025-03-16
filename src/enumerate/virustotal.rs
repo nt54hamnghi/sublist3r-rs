@@ -109,7 +109,7 @@ impl Search for VirusTotal {
     }
 
     async fn search(
-        &self,
+        &mut self,
         client: Client,
         url: &str,
         _: usize,

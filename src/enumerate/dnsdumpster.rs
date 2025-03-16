@@ -24,15 +24,21 @@ static INIT_TOKEN_RE: LazyLock<Regex> = LazyLock::new(|| {
 pub struct DNSDumpster {
     #[extract(domain)]
     domain: String,
+    once: bool,
 }
 
-impl Pagination for DNSDumpster {}
+impl Pagination for DNSDumpster {
+    fn stop(&self) -> bool {
+        self.once
+    }
+}
 
 impl DNSDumpster {
     pub fn new(domain: impl Into<String>) -> Self {
         // TODO: validate domain
         Self {
             domain: domain.into(),
+            once: false,
         }
     }
 
@@ -62,7 +68,7 @@ impl Search for DNSDumpster {
     }
 
     async fn search(
-        &self,
+        &mut self,
         client: Client,
         query: &str,
         page: usize,
@@ -71,7 +77,7 @@ impl Search for DNSDumpster {
         // which will cause 401 Unauthorized when the post request is made
         let token = self.init(client.clone()).await?.unwrap_or_default();
 
-        client
+        let resp = client
             .post(API_URL)
             .form(&[("target", &self.domain)])
             .header(header::ACCEPT, "text/html")
@@ -83,6 +89,12 @@ impl Search for DNSDumpster {
             .header(header::REFERER, SETTINGS.base_url)
             .header(header::USER_AGENT, SETTINGS.user_agent)
             .send()
-            .await
+            .await?;
+
+        if resp.status().is_success() {
+            self.once = true;
+        }
+
+        Ok(resp)
     }
 }

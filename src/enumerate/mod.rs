@@ -78,7 +78,7 @@ pub trait Search {
     fn settings(&self) -> Settings;
 
     async fn search(
-        &self,
+        &mut self,
         client: Client,
         query: &str,
         page: usize,
@@ -142,7 +142,7 @@ where
                 || retries >= MAX_RETRIES
                 || backoff_secs >= MAX_BACKOFF
             {
-                info!(retries, page, "completed");
+                info!(retries, page, stop = self.engine.stop(), "completed");
                 break;
             }
 

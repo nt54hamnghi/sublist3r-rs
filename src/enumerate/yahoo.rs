@@ -48,7 +48,7 @@ impl Search for Yahoo {
     }
 
     async fn search(
-        &self,
+        &mut self,
         client: Client,
         query: &str,
         page: usize,
