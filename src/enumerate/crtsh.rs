@@ -36,6 +36,9 @@ impl Extract for CrtSh {
 }
 
 impl Pagination for CrtSh {
+    /// `CrtSh` only runs once, no need to delay
+    async fn delay(&self) {}
+
     fn stop(&self) -> bool {
         self.once
     }

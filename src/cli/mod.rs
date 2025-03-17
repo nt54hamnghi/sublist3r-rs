@@ -18,6 +18,10 @@ pub struct Cli {
     /// Specify a comma-separated list of search engines
     #[arg(short, long, value_delimiter = ',')]
     pub engines: Vec<EngineChoice>,
+
+    /// Enable Verbosity and display results in realtime
+    #[arg(short, long)]
+    pub verbose: bool,
 }
 
 #[derive(Debug, Clone)]

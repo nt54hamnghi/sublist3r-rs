@@ -53,6 +53,9 @@ impl DNSDumpster {
 }
 
 impl Pagination for DNSDumpster {
+    /// `DNSDumpster` only runs once, no need to delay
+    async fn delay(&self) {}
+
     fn stop(&self) -> bool {
         self.once
     }
