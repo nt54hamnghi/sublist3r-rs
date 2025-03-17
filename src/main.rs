@@ -1,3 +1,4 @@
+use owo_colors::OwoColorize;
 use sublist3r_rs::prelude::*;
 use tracing::Level;
 
@@ -18,6 +19,13 @@ async fn main() -> anyhow::Result<()> {
         .domain
         .domain()
         .ok_or_else(|| anyhow::anyhow!("Invalid domain"))?;
+
+    println!("{}", header());
+    println!(
+        "{} {}",
+        "[-] Enumerating subdomains now for".blue(),
+        domain.blue()
+    );
 
     run(domain, args.engines).await?;
 

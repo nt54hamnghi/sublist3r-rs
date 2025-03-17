@@ -4,6 +4,7 @@ use std::time::Duration;
 use enum_dispatch::enum_dispatch;
 pub use enumerate_derive::Extract;
 use enumerate_derive::{enum_choice, enum_vec};
+use owo_colors::OwoColorize;
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, HeaderMap, HeaderValue};
 use reqwest::{Client, Response};
 use tracing::{info, trace, warn};
@@ -123,6 +124,14 @@ impl<E> Enumerator<E>
 where
     E: Pagination + Extract,
 {
+    pub fn print_banner(&self) {
+        println!(
+            "{} {}..",
+            "[-] Searching now in".green(),
+            self.engine.settings().name.green()
+        );
+    }
+
     #[tracing::instrument(skip_all, fields(NAME))]
     pub async fn enumerate(mut self, client: Client) -> HashSet<String> {
         let mut page = 0;

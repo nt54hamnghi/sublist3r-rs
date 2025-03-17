@@ -1,6 +1,6 @@
 pub use clap::Parser;
 
-pub use crate::cli::Cli;
+pub use crate::cli::{Cli, header};
 pub(crate) use crate::enumerate::bing::Bing;
 pub(crate) use crate::enumerate::crtsh::CrtSh;
 pub(crate) use crate::enumerate::dnsdumpster::DNSDumpster;

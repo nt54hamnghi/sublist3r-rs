@@ -176,6 +176,7 @@ pub fn enum_choice(_args: TokenStream, item: TokenStream) -> TokenStream {
         #input
 
         #[derive(clap::ValueEnum, Clone, Debug)]
+        #[clap(rename_all = "lower")]
         #vis enum #new_ident {
             #(#variant_idents),*
         }

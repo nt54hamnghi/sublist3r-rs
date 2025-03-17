@@ -1,13 +1,37 @@
 use std::str::FromStr;
 
 use clap::{Parser, ValueEnum};
+use owo_colors::OwoColorize;
 use url::{Host, Url};
 
 use crate::enumerate::EngineChoice;
 
+pub const BANNER: &str = r#"
+            _____    
+       ____/__  /____
+      / ___/ / / ___/
+     (__  ) / / /    
+    /____/ /_/_/     
+    
+    @nt54hamnghi
+"#;
+
+pub const WARNINGS: &str = r#"
+WARNING:
+[!] Use with caution. You are responsible for your actions.
+[!] Developers assume no liability and are not responsible for any misuse or damage.
+[!] By using this tool, you also agree to the terms of the APIs/services used.
+"#;
+
+pub fn header() -> String {
+    format!("{}\n{}", BANNER.purple(), WARNINGS.yellow())
+}
+
+/// A Rust rewrite of Sublist3r
 #[derive(Parser, Debug)]
 #[command(name = "s7r")]
 #[command(author, version, about, long_about)]
+#[command(before_help = header(), before_long_help = header())]
 #[command(arg_required_else_help = true)]
 #[command(verbatim_doc_comment, propagate_version = true)]
 pub struct Cli {

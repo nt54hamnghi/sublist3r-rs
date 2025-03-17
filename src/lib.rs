@@ -44,6 +44,7 @@ pub async fn run(domain: &str, choices: Vec<EngineChoice>) -> anyhow::Result<()>
         let c = client.clone();
         join_set.spawn(async move {
             let e = Enumerator::new(ng);
+            e.print_banner();
             let found = e.enumerate(c).await;
             let mut guard = r.lock().unwrap();
             guard.extend(found.into_iter());
@@ -52,6 +53,7 @@ pub async fn run(domain: &str, choices: Vec<EngineChoice>) -> anyhow::Result<()>
 
     let output = join_set.join_all().await;
 
+    println!();
     for sub in subdomains.lock().unwrap().iter() {
         println!("{}", sub);
     }
