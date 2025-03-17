@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
-use clap::{Parser, ValueEnum};
+use clap::{Command, Parser, ValueEnum};
+use clap_complete::{Generator, Shell, generate};
 use owo_colors::OwoColorize;
 use url::{Host, Url};
 
@@ -36,8 +37,8 @@ pub fn header() -> String {
 #[command(verbatim_doc_comment, propagate_version = true)]
 pub struct Cli {
     /// Domain name to enumerate it's subdomains
-    #[arg(short, long)]
-    pub domain: Domain,
+    #[arg(short, long, required_unless_present = "completion")]
+    pub domain: Option<Domain>,
 
     /// Specify a comma-separated list of search engines
     #[arg(short, long, value_delimiter = ',')]
@@ -46,6 +47,10 @@ pub struct Cli {
     /// Enable Verbosity and display results in realtime
     #[arg(short, long)]
     pub verbose: bool,
+
+    /// Generate completion for the given shell
+    #[arg(short, long, conflicts_with_all = ["domain", "engines", "verbose"])]
+    pub completion: Option<Shell>,
 }
 
 #[derive(Debug, Clone)]
@@ -74,4 +79,8 @@ impl Domain {
             },
         }
     }
+}
+
+pub fn print_completions<G: Generator>(g: G, c: &mut Command) {
+    generate(g, c, c.get_name().to_string(), &mut std::io::stdout());
 }

@@ -1,22 +1,31 @@
+use clap::CommandFactory;
 use owo_colors::OwoColorize;
 use sublist3r_rs::prelude::*;
 use tracing::Level;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let args = Cli::parse();
+    let Cli {
+        domain,
+        engines,
+        verbose,
+        completion,
+    } = Cli::parse();
 
-    let level = if args.verbose {
-        Level::INFO
-    } else {
-        Level::WARN
-    };
+    if let Some(shell) = completion {
+        print_completions(shell, &mut Cli::command());
+        return Ok(());
+    }
+
+    let level = if verbose { Level::INFO } else { Level::WARN };
 
     // build a formatting subscriber with a max level of WARN
     tracing_subscriber::fmt().with_max_level(level).init();
 
-    let domain = args
-        .domain
+    // domain is None only if completion is provided
+    // which is already handled above, so we can safely unwrap
+    let domain = domain.unwrap();
+    let domain = domain
         .domain()
         .ok_or_else(|| anyhow::anyhow!("Invalid domain"))?;
 
@@ -27,7 +36,7 @@ async fn main() -> anyhow::Result<()> {
         domain.blue()
     );
 
-    run(domain, args.engines).await?;
+    run(domain, engines).await?;
 
     Ok(())
 }

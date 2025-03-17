@@ -15,12 +15,13 @@ const SETTINGS: Settings = Settings {
     // https://www.virustotal.com/ui/domains/{domain}/relationships/subdomains
     base_url: "https://www.virustotal.com/ui/domains",
     user_agent: DEFAULT_USER_AGENT,
-    max_pages: 20,
+    max_pages: 10,
 };
 
 pub struct VirusTotal {
     domain: String,
     meta: Option<Meta>,
+    page: usize,
 }
 
 impl VirusTotal {
@@ -29,6 +30,7 @@ impl VirusTotal {
         Self {
             domain: domain.into(),
             meta: None,
+            page: 0,
         }
     }
 
@@ -80,11 +82,14 @@ impl Extract for VirusTotal {
 
 impl Pagination for VirusTotal {
     async fn delay(&self) {
-        let dur = Duration::from_millis(1500);
+        let dur = Duration::from_secs(2);
         tokio::time::sleep(dur).await;
     }
 
     fn stop(&self) -> bool {
+        if self.page >= SETTINGS.max_pages {
+            return true;
+        }
         match &self.meta {
             Some(m) => m.cursor.is_none(),
             None => false,
@@ -117,7 +122,7 @@ impl Search for VirusTotal {
         url: &str,
         _: usize,
     ) -> Result<Response, reqwest::Error> {
-        client
+        let resp = client
             .get(url)
             .query(&[("limit", PER_PAGE)])
             .header(header::USER_AGENT, SETTINGS.user_agent)
@@ -131,7 +136,13 @@ impl Search for VirusTotal {
                 VirusTotal::compute_anti_abuse_header(),
             )
             .send()
-            .await
+            .await?;
+
+        if resp.status().is_success() {
+            self.page += 1;
+        }
+
+        Ok(resp)
     }
 }
 
