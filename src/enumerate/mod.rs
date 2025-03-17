@@ -3,23 +3,24 @@ use std::time::Duration;
 
 use enum_dispatch::enum_dispatch;
 pub use enumerate_derive::Extract;
+use enumerate_derive::{enum_choice, enum_vec};
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, HeaderMap, HeaderValue};
 use reqwest::{Client, Response};
 use tracing::{info, trace, warn};
 
-pub use self::bing::Bing;
-pub use self::crtsh::CrtSh;
-pub use self::dnsdumpster::DNSDumpster;
-pub use self::google::Google;
-pub use self::virustotal::VirusTotal;
-pub use self::yahoo::Yahoo;
+use self::bing::Bing;
+use self::crtsh::CrtSh;
+use self::dnsdumpster::DNSDumpster;
+use self::google::Google;
+use self::virustotal::VirusTotal;
+use self::yahoo::Yahoo;
 
-pub mod bing;
-pub mod crtsh;
-pub mod dnsdumpster;
-pub mod google;
-pub mod virustotal;
-pub mod yahoo;
+pub(crate) mod bing;
+pub(crate) mod crtsh;
+pub(crate) mod dnsdumpster;
+pub(crate) mod google;
+pub(crate) mod virustotal;
+pub(crate) mod yahoo;
 
 const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
@@ -52,6 +53,8 @@ pub(crate) fn defaults_headers() -> HeaderMap {
 }
 
 #[enum_dispatch(Extract, Pagination, Search)]
+#[enum_vec]
+#[enum_choice]
 pub enum Engine {
     Bing,
     CrtSh,
@@ -62,7 +65,7 @@ pub enum Engine {
 }
 
 #[enum_dispatch]
-pub trait Extract {
+pub(crate) trait Extract {
     fn extract(&mut self, input: &str) -> HashSet<String>;
 }
 
@@ -75,7 +78,7 @@ pub struct Settings {
 }
 
 #[enum_dispatch]
-pub trait Search {
+pub(crate) trait Search {
     fn generate_query(&self, subdomains: &HashSet<String>) -> String;
 
     fn settings(&self) -> Settings;
@@ -89,7 +92,7 @@ pub trait Search {
 }
 
 #[enum_dispatch]
-pub trait Pagination: Search {
+pub(crate) trait Pagination: Search {
     async fn delay(&self) {
         let dur = Duration::from_millis(500);
         tokio::time::sleep(dur).await;
@@ -100,7 +103,7 @@ pub trait Pagination: Search {
     }
 }
 
-pub struct Enumerator<E> {
+pub(crate) struct Enumerator<E> {
     engine: E,
 }
 
