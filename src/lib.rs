@@ -3,39 +3,39 @@
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
-use enumerate::{Bing, CrtSh, DNSDumpster, Engine, Enumerator, Google, VirusTotal, Yahoo,
-                defaults_headers};
+use enumerate::{EngineChoice, defaults_headers};
+use prelude::*;
 use reqwest::Client;
 use tracing::info;
 
-mod enumerate;
+pub mod cli;
+pub mod enumerate;
+pub mod prelude;
 
 #[tracing::instrument(skip_all)]
-pub async fn run(_input: &str) -> anyhow::Result<()> {
-    enumerate().await
-}
-
-async fn test_run() -> anyhow::Result<()> {
-    Ok(())
-}
-
-async fn enumerate() -> anyhow::Result<()> {
-    info!("initializing client...");
+pub async fn run(domain: &str, choices: Vec<EngineChoice>) -> anyhow::Result<()> {
     let client = Client::builder()
         .default_headers(defaults_headers())
         .cookie_store(true)
         .gzip(true) // enable gzip compression
         .build()?;
 
-    let domain = "***REMOVED***";
-    let engines: Vec<Engine> = vec![
-        Google::new(domain).into(),
-        Yahoo::new(domain).into(),
-        Bing::new(domain).into(),
-        DNSDumpster::new(domain).into(),
-        VirusTotal::new(domain).into(),
-        CrtSh::new(domain).into(),
-    ];
+    let engines: Vec<Engine> = if choices.is_empty() {
+        Engine::enum_vec(domain)
+    } else {
+        choices
+            .into_iter()
+            .map(|c| match c {
+                EngineChoice::Bing => Bing::new(domain).into(),
+                EngineChoice::CrtSh => CrtSh::new(domain).into(),
+                EngineChoice::DNSDumpster => DNSDumpster::new(domain).into(),
+                EngineChoice::Google => Google::new(domain).into(),
+                EngineChoice::VirusTotal => VirusTotal::new(domain).into(),
+                EngineChoice::Yahoo => Yahoo::new(domain).into(),
+            })
+            .collect()
+    };
+
     let subdomains = Arc::new(Mutex::new(HashSet::<String>::new()));
 
     let mut join_set = tokio::task::JoinSet::new();
