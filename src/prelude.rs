@@ -9,5 +9,5 @@ pub(crate) use crate::enumerate::google::Google;
 pub(crate) use crate::enumerate::hackertarget::HackerTarget;
 pub(crate) use crate::enumerate::virustotal::VirusTotal;
 pub(crate) use crate::enumerate::yahoo::Yahoo;
-pub(crate) use crate::enumerate::{Engine, Enumerator, Extract, Pagination, Search};
+pub(crate) use crate::enumerate::{Engine, Enumerator, Extract, Search};
 pub use crate::run;

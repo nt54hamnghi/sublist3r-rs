@@ -1,10 +1,11 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::sync::LazyLock;
 
 use regex::Regex;
 use reqwest::{Client, Response, header};
 
-use super::{DEFAULT_USER_AGENT, Extract, Pagination, Search, Settings};
+use super::{DEFAULT_USER_AGENT, Extract, Search, Settings};
 
 const API_URL: &str = "https://api.dnsdumpster.com/htmld/";
 const SETTINGS: Settings = Settings {
@@ -49,25 +50,21 @@ impl DNSDumpster {
     }
 }
 
-impl Pagination for DNSDumpster {
-    /// `DNSDumpster` only runs once, no need to delay
-    async fn delay(&self) {}
-}
-
 impl Search for DNSDumpster {
-    fn generate_query(&self, subdomains: &HashSet<String>) -> String {
-        self.domain.clone()
-    }
-
     fn settings(&self) -> Settings {
         SETTINGS
     }
 
+    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+        Some(Cow::Borrowed(&self.domain))
+    }
+
+    #[doc = " Search for a query on a page"]
     async fn search(
-        &mut self,
+        &self,
         client: Client,
-        _: &str,
-        _: usize,
+        query: &str,
+        page: usize,
     ) -> Result<Response, reqwest::Error> {
         // default token to an empty string,
         // which will cause 401 Unauthorized when the post request is made
@@ -87,4 +84,7 @@ impl Search for DNSDumpster {
             .send()
             .await
     }
+
+    /// `DNSDumpster` only runs once, no need to delay
+    async fn delay(&self) {}
 }

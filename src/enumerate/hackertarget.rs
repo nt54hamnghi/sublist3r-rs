@@ -1,10 +1,11 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::hash::Hash;
 
 use reqwest::{Client, Response, header};
 use serde::Deserialize;
 
-use super::{DEFAULT_USER_AGENT, Extract, Pagination, Search, Settings};
+use super::{Extract, Search, Settings};
 
 const SETTINGS: Settings = Settings {
     name: "HackerTarget",
@@ -35,22 +36,17 @@ impl Extract for HackerTarget {
     }
 }
 
-impl Pagination for HackerTarget {
-    /// `HackerTarget` only runs once, no need to delay
-    async fn delay(&self) {}
-}
-
 impl Search for HackerTarget {
-    fn generate_query(&self, subdomains: &HashSet<String>) -> String {
-        self.domain.to_owned()
-    }
-
     fn settings(&self) -> Settings {
         SETTINGS
     }
 
+    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+        Some(Cow::Borrowed(&self.domain))
+    }
+
     async fn search(
-        &mut self,
+        &self,
         client: Client,
         query: &str,
         _: usize,
@@ -61,4 +57,7 @@ impl Search for HackerTarget {
             .send()
             .await
     }
+
+    /// `HackerTarget` only runs once, no need to delay
+    async fn delay(&self) {}
 }

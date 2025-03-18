@@ -1,9 +1,10 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 
 use reqwest::{Client, Response, header};
 use serde::Deserialize;
 
-use super::{DEFAULT_USER_AGENT, Extract, Pagination, Search, Settings};
+use super::{DEFAULT_USER_AGENT, Extract, Search, Settings};
 
 const SETTINGS: Settings = Settings {
     name: "CrtSh",
@@ -32,26 +33,16 @@ impl Extract for CrtSh {
     }
 }
 
-impl Pagination for CrtSh {
-    /// `CrtSh` only runs once, no need to delay
-    async fn delay(&self) {}
-}
-
 impl Search for CrtSh {
-    fn generate_query(&self, subdomains: &HashSet<String>) -> String {
-        self.domain.to_owned()
-    }
-
     fn settings(&self) -> Settings {
         SETTINGS
     }
 
-    async fn search(
-        &mut self,
-        client: Client,
-        _: &str,
-        _: usize,
-    ) -> Result<Response, reqwest::Error> {
+    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+        Some(Cow::Borrowed(&self.domain))
+    }
+
+    async fn search(&self, client: Client, _: &str, _: usize) -> Result<Response, reqwest::Error> {
         client
             .get(SETTINGS.base_url)
             .query(&[("q", &self.domain)])
@@ -59,6 +50,9 @@ impl Search for CrtSh {
             .send()
             .await
     }
+
+    /// `CrtSh` only runs once, no need to delay
+    async fn delay(&self) {}
 }
 
 #[derive(Debug, Deserialize)]

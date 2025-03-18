@@ -1,8 +1,9 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 
 use reqwest::{Client, Response, header};
 
-use super::{DEFAULT_USER_AGENT, Extract, Pagination, SUBDOMAIN_RE_STR, Search, Settings};
+use super::{DEFAULT_USER_AGENT, Extract, SUBDOMAIN_RE_STR, Search, Settings};
 
 // Yahoo seems to always return 7 results per page.
 // Until we find a way to configure the number of results per page,
@@ -16,7 +17,7 @@ const SETTINGS: Settings = Settings {
 };
 
 #[derive(Extract)]
-#[extract(pattern = r#"<span>(?<subdomain>.*?\.{domain})<\/span>"#)]
+#[extract(pattern = r#"<span>(?<subdomain>{SUBDOMAIN_RE_STR}\.{domain})<\/span>"#)]
 pub struct Yahoo {
     #[extract(domain)]
     domain: String,
@@ -30,16 +31,15 @@ impl Yahoo {
     }
 }
 
-impl Pagination for Yahoo {}
-
 impl Search for Yahoo {
-    fn generate_query(&self, subdomains: &HashSet<String>) -> String {
+    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
         let found = subdomains
             .iter()
             .take(15)
             .fold(String::new(), |acc, d| format!("{} -domain:{}", acc, d));
 
-        format!("site:{0} -domain:www.{0}{1}", self.domain, found)
+        let query = format!("site:{0} -domain:www.{0}{1}", self.domain, found);
+        Some(Cow::Owned(query))
     }
 
     fn settings(&self) -> Settings {
@@ -47,7 +47,7 @@ impl Search for Yahoo {
     }
 
     async fn search(
-        &mut self,
+        &self,
         client: Client,
         query: &str,
         page: usize,
@@ -84,8 +84,9 @@ mod tests {
     fn test_generate_query(#[case] subdomains: HashSet<String>, #[case] expected: &str) {
         let domain = "example.com";
         let google = Yahoo::new(domain);
+        let query = google.next_query(&subdomains).unwrap();
 
-        assert_eq!(google.generate_query(&subdomains), expected);
+        assert_eq!(query, expected);
     }
 
     #[test]
@@ -96,7 +97,7 @@ mod tests {
             "second.example.com".to_owned(),
         ]);
         let google = Yahoo::new(domain);
-        let query = google.generate_query(&subdomains);
+        let query = google.next_query(&subdomains).unwrap();
 
         let (expected1, expected2) = (
             "site:example.com -domain:www.example.com -domain:first.example.com -domain:second.example.com",

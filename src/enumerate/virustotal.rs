@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -6,7 +7,7 @@ use base64::prelude::BASE64_STANDARD;
 use reqwest::{Client, Response, header};
 use serde::{Deserialize, Deserializer};
 
-use super::{DEFAULT_USER_AGENT, Extract, Pagination, Search, Settings};
+use super::{DEFAULT_USER_AGENT, Extract, Search, Settings};
 
 const PER_PAGE: usize = 10;
 const SETTINGS: Settings = Settings {
@@ -77,41 +78,30 @@ impl Extract for VirusTotal {
     }
 }
 
-impl Pagination for VirusTotal {
-    async fn delay(&self) {
-        let dur = Duration::from_secs(2);
-        tokio::time::sleep(dur).await;
-    }
-
-    fn stop(&self) -> bool {
-        match &self.meta {
-            Some(m) => m.cursor.is_none(),
-            None => false,
-        }
-    }
-}
-
 impl Search for VirusTotal {
-    fn generate_query(&self, subdomains: &HashSet<String>) -> String {
-        let domain = &self.domain;
-        let base_url = SETTINGS.base_url;
-        let base_query = format!("{base_url}/{domain}/relationships/subdomains");
-
-        match &self.meta {
-            Some(m) => match &m.cursor {
-                Some(c) => format!("{base_query}?cursor={c}"),
-                None => base_query,
-            },
-            None => base_query,
-        }
-    }
-
     fn settings(&self) -> Settings {
         SETTINGS
     }
 
+    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+        let Self { domain, meta } = self;
+
+        let base_url = SETTINGS.base_url;
+        let base_query = format!("{base_url}/{domain}/relationships/subdomains");
+
+        let query = match &self.meta {
+            Some(m) => match &m.cursor {
+                Some(c) => format!("{base_query}?cursor={c}"),
+                None => return None,
+            },
+            None => base_query,
+        };
+
+        Some(Cow::Owned(query))
+    }
+
     async fn search(
-        &mut self,
+        &self,
         client: Client,
         url: &str,
         _: usize,
@@ -131,6 +121,10 @@ impl Search for VirusTotal {
             )
             .send()
             .await
+    }
+
+    async fn delay(&self) {
+        tokio::time::sleep(Duration::from_secs(1)).await;
     }
 }
 

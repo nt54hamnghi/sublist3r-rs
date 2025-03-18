@@ -1,8 +1,9 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 
 use reqwest::{Client, Response, header};
 
-use super::{Extract, Pagination, Search, Settings};
+use super::{Extract, Search, Settings};
 
 const PER_PAGE: usize = 10;
 // https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search/reference/headers
@@ -30,23 +31,22 @@ impl Bing {
     }
 }
 
-impl Pagination for Bing {}
-
 impl Search for Bing {
-    fn generate_query(&self, subdomains: &HashSet<String>) -> String {
-        let found = subdomains
-            .iter()
-            .fold(String::new(), |acc, d| format!("{} -{}", acc, d));
-
-        format!("domain:{0} -www.{0}{1}", self.domain, found)
-    }
-
     fn settings(&self) -> Settings {
         SETTINGS
     }
 
+    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+        let found = subdomains
+            .iter()
+            .fold(String::new(), |acc, d| format!("{} -{}", acc, d));
+
+        let query = format!("domain:{0} -www.{0}{1}", self.domain, found);
+        Some(Cow::Owned(query))
+    }
+
     async fn search(
-        &mut self,
+        &self,
         client: Client,
         query: &str,
         page: usize,

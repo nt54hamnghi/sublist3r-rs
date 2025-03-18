@@ -1,9 +1,10 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 
 use reqwest::header::{self};
 use reqwest::{Client, Response};
 
-use super::{Extract, Pagination, Search, Settings};
+use super::{Extract, Search, Settings};
 
 const PER_PAGE: usize = 20;
 const SETTINGS: Settings = Settings {
@@ -36,9 +37,11 @@ impl Google {
     }
 }
 
-impl Pagination for Google {}
-
 impl Search for Google {
+    fn settings(&self) -> Settings {
+        SETTINGS
+    }
+
     /// Constructs a search query for subdomain enumeration
     ///
     /// Creates a query using Google's search syntax. The query structure is:
@@ -53,21 +56,18 @@ impl Search for Google {
     ///
     ///  - If subdomains have been discovered, the query will be:
     ///    `site:example.com -www.example.com -subdomain1.example.com -subdomain2.example.com`
-    fn generate_query(&self, subdomains: &HashSet<String>) -> String {
+    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
         // TODO: consider limiting the number of subdomains to exclude
         let found = subdomains
             .iter()
             .fold(String::new(), |acc, d| format!("{} -{}", acc, d));
 
-        format!("site:{0} -www.{0}{1}", self.domain, found)
-    }
-
-    fn settings(&self) -> Settings {
-        SETTINGS
+        let query = format!("site:{0} -www.{0}{1}", self.domain, found);
+        Some(Cow::Owned(query))
     }
 
     async fn search(
-        &mut self,
+        &self,
         client: Client,
         query: &str,
         page: usize,
@@ -103,14 +103,15 @@ mod tests {
     #[rstest]
     #[case::empty(HashSet::new(), "site:example.com -www.example.com")]
     #[case::single(
-        HashSet::from(["app.example.com".to_owned()]), 
+        HashSet::from(["app.example.com".to_owned()]),
         "site:example.com -www.example.com -app.example.com"
     )]
     fn test_generate_query(#[case] subdomains: HashSet<String>, #[case] expected: &str) {
         let domain = "example.com";
         let google = Google::new(domain);
+        let query = google.next_query(&subdomains).unwrap();
 
-        assert_eq!(google.generate_query(&subdomains), expected);
+        assert_eq!(query, expected);
     }
 
     #[test]
@@ -121,7 +122,7 @@ mod tests {
             "second.example.com".to_owned(),
         ]);
         let google = Google::new(domain);
-        let query = google.generate_query(&subdomains);
+        let query = google.next_query(&subdomains).unwrap();
 
         let (expected1, expected2) = (
             "site:example.com -www.example.com -first.example.com -second.example.com",

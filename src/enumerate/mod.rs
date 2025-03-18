@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::time::Duration;
 
@@ -57,7 +58,7 @@ pub(crate) fn defaults_headers() -> HeaderMap {
     headers
 }
 
-#[enum_dispatch(Extract, Pagination, Search)]
+#[enum_dispatch(Extract, Search)]
 #[enum_vec]
 #[enum_choice]
 pub enum Engine {
@@ -86,30 +87,30 @@ pub struct Settings {
 
 #[enum_dispatch]
 pub(crate) trait Search {
-    fn generate_query(&self, subdomains: &HashSet<String>) -> String;
-
     fn settings(&self) -> Settings;
+
+    /// Generate the next search query based on discovered subdomains
+    ///
+    /// # Arguments
+    /// * `subdomains` - Set of previously discovered subdomains to exclude from search
+    ///
+    /// # Returns
+    /// * `Some(query)` - The next search query to execute
+    /// * `None` - No more queries to execute, enumeration should stop
+    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>>;
 
     /// Search for a query on a page
     async fn search(
-        &mut self,
+        &self,
         client: Client,
         query: &str,
         page: usize,
     ) -> Result<Response, reqwest::Error>;
-}
 
-#[enum_dispatch]
-pub(crate) trait Pagination: Search {
     /// Delay between pages to avoid being blocked  
     async fn delay(&self) {
         let dur = Duration::from_millis(500);
         tokio::time::sleep(dur).await;
-    }
-
-    /// Whether to stop the enumeration early
-    fn stop(&self) -> bool {
-        false
     }
 }
 
@@ -119,7 +120,7 @@ pub(crate) struct Enumerator<E> {
 
 impl<E> Enumerator<E>
 where
-    E: Pagination + Extract,
+    E: Search + Extract,
 {
     pub fn new(engine: E) -> Self {
         Self { engine }
@@ -133,7 +134,7 @@ const MAX_BACKOFF: u8 = 16;
 
 impl<E> Enumerator<E>
 where
-    E: Pagination + Extract,
+    E: Search + Extract,
 {
     pub fn print_banner(&self) {
         println!(
@@ -164,16 +165,15 @@ where
 
         loop {
             trace!(page, found, retries, "searching");
-            if self.engine.stop()
-                || rounds >= MAX_ROUNDS
-                || retries >= MAX_RETRIES
-                || backoff_secs >= MAX_BACKOFF
-            {
-                info!(retries, rounds, stop = self.engine.stop(), "completed");
+            if rounds >= MAX_ROUNDS || retries >= MAX_RETRIES || backoff_secs >= MAX_BACKOFF {
+                info!(retries, rounds, stop = false, "completed");
                 break;
             }
 
-            let query = self.engine.generate_query(&subdomains);
+            let Some(query) = self.engine.next_query(&subdomains) else {
+                info!(retries, rounds, stop = true, "completed");
+                break;
+            };
 
             // If the search fails, backoff and retry
             // backoff time is doubled each time

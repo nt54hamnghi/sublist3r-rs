@@ -1,10 +1,10 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
-use std::hash::Hash;
 
 use reqwest::{Client, Response, header};
 use serde::Deserialize;
 
-use super::{DEFAULT_USER_AGENT, Extract, Pagination, Search, Settings};
+use super::{Extract, Search, Settings};
 
 const SETTINGS: Settings = Settings {
     name: "AlienVault",
@@ -27,36 +27,37 @@ impl AlienVault {
 
 impl Extract for AlienVault {
     fn extract(&mut self, input: &str) -> HashSet<String> {
-        serde_json::from_str::<AlienVaultResponse>(input)
+        let mut found = serde_json::from_str::<AlienVaultResponse>(input)
             .map(|r| r.data)
-            .unwrap_or_default()
+            .unwrap_or_default();
+        found.retain(|d| d.ends_with(&self.domain));
+        found
     }
-}
-
-impl Pagination for AlienVault {
-    /// `AlienVault` only runs once, no need to delay
-    async fn delay(&self) {}
 }
 
 impl Search for AlienVault {
-    fn generate_query(&self, subdomains: &HashSet<String>) -> String {
-        let domain = &self.domain;
-        let base_url = SETTINGS.base_url;
-        format!("{base_url}/{domain}/passive_dns")
-    }
-
     fn settings(&self) -> Settings {
         SETTINGS
     }
 
+    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+        let domain = &self.domain;
+        let base_url = SETTINGS.base_url;
+        let query = format!("{base_url}/{domain}/passive_dns");
+        Some(Cow::Owned(query))
+    }
+
     async fn search(
-        &mut self,
+        &self,
         client: Client,
         url: &str,
         _: usize,
     ) -> Result<Response, reqwest::Error> {
         client.get(url).send().await
     }
+
+    /// `AlienVault` only runs once, no need to delay
+    async fn delay(&self) {}
 }
 
 #[derive(Debug, Deserialize)]
