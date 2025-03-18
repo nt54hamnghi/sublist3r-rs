@@ -25,7 +25,6 @@ pub struct VirusTotal {
 
 impl VirusTotal {
     pub fn new(domain: impl Into<String>) -> Self {
-        // TODO: validate domain
         Self {
             domain: domain.into(),
             meta: None,

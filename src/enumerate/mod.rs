@@ -9,6 +9,7 @@ use reqwest::header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, HeaderMap, Heade
 use reqwest::{Client, Response};
 use tracing::{info, trace, warn};
 
+use self::alienvault::AlienVault;
 use self::bing::Bing;
 use self::crtsh::CrtSh;
 use self::dnsdumpster::DNSDumpster;
@@ -16,6 +17,7 @@ use self::google::Google;
 use self::virustotal::VirusTotal;
 use self::yahoo::Yahoo;
 
+pub(crate) mod alienvault;
 pub(crate) mod bing;
 pub(crate) mod crtsh;
 pub(crate) mod dnsdumpster;
@@ -57,6 +59,7 @@ pub(crate) fn defaults_headers() -> HeaderMap {
 #[enum_vec]
 #[enum_choice]
 pub enum Engine {
+    AlienVault,
     Bing,
     CrtSh,
     DNSDumpster,

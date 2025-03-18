@@ -16,7 +16,7 @@ const SETTINGS: Settings = Settings {
 };
 
 #[derive(Extract)]
-#[extract(pattern = r#"<span>(?<subdomain>{SUBDOMAIN_RE_STR}\.{domain})<\/span>"#)]
+#[extract(pattern = r#"<span>(?<subdomain>.*?\.{domain})<\/span>"#)]
 pub struct Yahoo {
     #[extract(domain)]
     domain: String,
@@ -24,7 +24,6 @@ pub struct Yahoo {
 
 impl Yahoo {
     pub fn new(domain: impl Into<String>) -> Self {
-        // TODO: validate domain
         Self {
             domain: domain.into(),
         }

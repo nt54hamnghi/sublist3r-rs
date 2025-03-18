@@ -28,7 +28,6 @@ pub struct DNSDumpster {
 
 impl DNSDumpster {
     pub fn new(domain: impl Into<String>) -> Self {
-        // TODO: validate domain
         Self {
             domain: domain.into(),
         }

@@ -24,7 +24,6 @@ pub struct Bing {
 
 impl Bing {
     pub fn new(domain: impl Into<String>) -> Self {
-        // TODO: validate domain
         Self {
             domain: domain.into(),
         }

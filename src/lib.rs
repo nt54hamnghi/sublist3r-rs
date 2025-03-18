@@ -26,6 +26,7 @@ pub async fn run(domain: &str, choices: Vec<EngineChoice>) -> anyhow::Result<()>
         choices
             .into_iter()
             .map(|c| match c {
+                EngineChoice::AlienVault => AlienVault::new(domain).into(),
                 EngineChoice::Bing => Bing::new(domain).into(),
                 EngineChoice::CrtSh => CrtSh::new(domain).into(),
                 EngineChoice::DNSDumpster => DNSDumpster::new(domain).into(),
