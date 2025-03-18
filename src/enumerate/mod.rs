@@ -75,7 +75,7 @@ pub struct Settings {
     name: &'static str,
     base_url: &'static str,
     user_agent: &'static str,
-    max_pages: usize,
+    max_rounds: usize,
 }
 
 #[enum_dispatch]
@@ -84,6 +84,7 @@ pub(crate) trait Search {
 
     fn settings(&self) -> Settings;
 
+    /// Search for a query on a page
     async fn search(
         &mut self,
         client: Client,
@@ -94,11 +95,13 @@ pub(crate) trait Search {
 
 #[enum_dispatch]
 pub(crate) trait Pagination: Search {
+    /// Delay between pages to avoid being blocked  
     async fn delay(&self) {
         let dur = Duration::from_millis(500);
         tokio::time::sleep(dur).await;
     }
 
+    /// Whether to stop the enumeration early
     fn stop(&self) -> bool {
         false
     }
@@ -117,7 +120,9 @@ where
     }
 }
 
+/// Maximum number of retries, give up after this number of retries
 const MAX_RETRIES: u8 = 10;
+/// Maximum backoff time, give up after backoff reaches this value
 const MAX_BACKOFF: u8 = 16;
 
 impl<E> Enumerator<E>
@@ -134,8 +139,9 @@ where
 
     #[tracing::instrument(skip_all, fields(NAME))]
     pub async fn enumerate(mut self, client: Client) -> HashSet<String> {
-        let mut page = 0;
+        let mut rounds = 0;
         let mut retries = 0;
+        let mut page = 0;
         let mut backoff_secs = 1;
         let mut found = 0;
         let mut subdomains = HashSet::new();
@@ -143,7 +149,7 @@ where
         #[allow(non_snake_case)]
         let Settings {
             name: NAME,
-            max_pages: MAX_PAGES,
+            max_rounds: MAX_ROUNDS,
             ..
         } = self.engine.settings();
 
@@ -152,17 +158,19 @@ where
 
         loop {
             trace!(page, found, retries, "searching");
-            if page >= MAX_PAGES
-                || self.engine.stop()
+            if self.engine.stop()
+                || rounds >= MAX_ROUNDS
                 || retries >= MAX_RETRIES
                 || backoff_secs >= MAX_BACKOFF
             {
-                info!(retries, page, stop = self.engine.stop(), "completed");
+                info!(retries, rounds, stop = self.engine.stop(), "completed");
                 break;
             }
 
             let query = self.engine.generate_query(&subdomains);
 
+            // If the search fails, backoff and retry
+            // backoff time is doubled each time
             let resp = match self
                 .engine
                 .search(client.clone(), &query, page)
@@ -190,23 +198,29 @@ where
                 }
             };
 
-            // informs the executor that this task is about to block the thread
+            // Informs the executor that this task is about to block the thread
             // so any other tasks can be moved to a new worker thread
             tokio::task::block_in_place(|| {
                 subdomains.extend(self.engine.extract(&body));
             });
 
+            // Adjust retry counter based on search results:
+            // - If new subdomains found: Reward progress by reducing retry count (-2)
+            // - If no new findings: Move to next page and increment retry count (+1)
             if found != subdomains.len() {
                 found = subdomains.len();
-                // subtracts 2 and saturates at 0 instead of underflowing if the result would be negative.
+                // Subtracts 2 and saturates at 0
+                // instead of underflowing if the result would be negative.
                 retries = retries.saturating_sub(2);
             } else {
                 page += 1;
                 retries += 1;
             }
 
-            // delay after each page to avoid being blocked
+            // Delay after each page to avoid being blocked
             self.engine.delay().await;
+
+            rounds += 1;
         }
 
         subdomains

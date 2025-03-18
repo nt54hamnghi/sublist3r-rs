@@ -10,7 +10,7 @@ const SETTINGS: Settings = Settings {
     name: "Bing",
     base_url: "https://www.bing.com/search",
     user_agent: "Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; Touch; rv:11.0) like Gecko",
-    max_pages: 20,
+    max_rounds: 10,
 };
 /// A random client id that Bing uses to identify the client to ensure consistent results
 const X_MSEDGE_CLIENT_ID: &str = "sublist3r-rs-bing";

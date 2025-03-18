@@ -15,13 +15,12 @@ const SETTINGS: Settings = Settings {
     // https://www.virustotal.com/ui/domains/{domain}/relationships/subdomains
     base_url: "https://www.virustotal.com/ui/domains",
     user_agent: DEFAULT_USER_AGENT,
-    max_pages: 10,
+    max_rounds: 15,
 };
 
 pub struct VirusTotal {
     domain: String,
     meta: Option<Meta>,
-    page: usize,
 }
 
 impl VirusTotal {
@@ -30,7 +29,6 @@ impl VirusTotal {
         Self {
             domain: domain.into(),
             meta: None,
-            page: 0,
         }
     }
 
@@ -87,9 +85,6 @@ impl Pagination for VirusTotal {
     }
 
     fn stop(&self) -> bool {
-        if self.page >= SETTINGS.max_pages {
-            return true;
-        }
         match &self.meta {
             Some(m) => m.cursor.is_none(),
             None => false,
@@ -122,7 +117,7 @@ impl Search for VirusTotal {
         url: &str,
         _: usize,
     ) -> Result<Response, reqwest::Error> {
-        let resp = client
+        client
             .get(url)
             .query(&[("limit", PER_PAGE)])
             .header(header::USER_AGENT, SETTINGS.user_agent)
@@ -136,13 +131,7 @@ impl Search for VirusTotal {
                 VirusTotal::compute_anti_abuse_header(),
             )
             .send()
-            .await?;
-
-        if resp.status().is_success() {
-            self.page += 1;
-        }
-
-        Ok(resp)
+            .await
     }
 }
 

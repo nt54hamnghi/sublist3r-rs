@@ -12,7 +12,7 @@ const SETTINGS: Settings = Settings {
     name: "Yahoo",
     base_url: "https://search.yahoo.com/search",
     user_agent: DEFAULT_USER_AGENT,
-    max_pages: 50,
+    max_rounds: 50,
 };
 
 #[derive(Extract)]

@@ -18,7 +18,7 @@ const SETTINGS: Settings = Settings {
     // - "Lynx/2.8.6rel.5 libwww-FM/2.14"
     // - "w3m/0.5.3"
     user_agent: "Lynx/2.8.6rel.5 libwww-FM/2.14",
-    max_pages: 20,
+    max_rounds: 20,
 };
 
 #[derive(Extract)]

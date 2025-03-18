@@ -11,7 +11,7 @@ const SETTINGS: Settings = Settings {
     name: "DNSDumpster",
     base_url: "https://dnsdumpster.com",
     user_agent: DEFAULT_USER_AGENT,
-    max_pages: 1,
+    max_rounds: 1,
 };
 
 static INIT_TOKEN_RE: LazyLock<Regex> = LazyLock::new(|| {
@@ -24,7 +24,6 @@ static INIT_TOKEN_RE: LazyLock<Regex> = LazyLock::new(|| {
 pub struct DNSDumpster {
     #[extract(domain)]
     domain: String,
-    once: bool,
 }
 
 impl DNSDumpster {
@@ -32,7 +31,6 @@ impl DNSDumpster {
         // TODO: validate domain
         Self {
             domain: domain.into(),
-            once: false,
         }
     }
 
@@ -55,10 +53,6 @@ impl DNSDumpster {
 impl Pagination for DNSDumpster {
     /// `DNSDumpster` only runs once, no need to delay
     async fn delay(&self) {}
-
-    fn stop(&self) -> bool {
-        self.once
-    }
 }
 
 impl Search for DNSDumpster {
@@ -80,7 +74,7 @@ impl Search for DNSDumpster {
         // which will cause 401 Unauthorized when the post request is made
         let token = self.init(client.clone()).await?.unwrap_or_default();
 
-        let resp = client
+        client
             .post(API_URL)
             .form(&[("target", &self.domain)])
             .header(header::ACCEPT, "text/html")
@@ -92,12 +86,6 @@ impl Search for DNSDumpster {
             .header(header::REFERER, SETTINGS.base_url)
             .header(header::USER_AGENT, SETTINGS.user_agent)
             .send()
-            .await?;
-
-        if resp.status().is_success() {
-            self.once = true;
-        }
-
-        Ok(resp)
+            .await
     }
 }

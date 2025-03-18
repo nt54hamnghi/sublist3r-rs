@@ -9,12 +9,11 @@ const SETTINGS: Settings = Settings {
     name: "CrtSh",
     base_url: "https://crt.sh/json",
     user_agent: DEFAULT_USER_AGENT,
-    max_pages: 1,
+    max_rounds: 1,
 };
 
 pub struct CrtSh {
     domain: String,
-    once: bool,
 }
 
 impl CrtSh {
@@ -22,7 +21,6 @@ impl CrtSh {
         // TODO: validate domain
         Self {
             domain: domain.into(),
-            once: false,
         }
     }
 }
@@ -38,10 +36,6 @@ impl Extract for CrtSh {
 impl Pagination for CrtSh {
     /// `CrtSh` only runs once, no need to delay
     async fn delay(&self) {}
-
-    fn stop(&self) -> bool {
-        self.once
-    }
 }
 
 impl Search for CrtSh {
@@ -59,18 +53,12 @@ impl Search for CrtSh {
         _: &str,
         _: usize,
     ) -> Result<Response, reqwest::Error> {
-        let resp = client
+        client
             .get(SETTINGS.base_url)
             .query(&[("q", &self.domain)])
             .header(header::USER_AGENT, SETTINGS.user_agent)
             .send()
-            .await?;
-
-        if resp.status().is_success() {
-            self.once = true;
-        }
-
-        Ok(resp)
+            .await
     }
 }
 
