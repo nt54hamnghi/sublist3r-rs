@@ -1,9 +1,7 @@
 use std::borrow::Cow;
 use std::collections::HashSet;
-use std::hash::Hash;
 
-use reqwest::{Client, Response, header};
-use serde::Deserialize;
+use reqwest::{Client, Response};
 
 use super::{Extract, Search, Settings};
 
@@ -41,7 +39,7 @@ impl Search for HackerTarget {
         SETTINGS
     }
 
-    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+    fn next_query(&self, _: &HashSet<String>) -> Option<Cow<'_, str>> {
         Some(Cow::Borrowed(&self.domain))
     }
 
