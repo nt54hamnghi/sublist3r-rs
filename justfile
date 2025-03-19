@@ -20,7 +20,9 @@ alias w := watch
 # zsh:
 #    @sudo cp ./completion/zsh-completion /usr/share/zsh/site-functions/_sublist3r-rs
 
-# install: zsh
-#    @cargo install --path .
+install:
+   @cargo install --path .
+   @s7r --completion zsh > ./_s7r
+   @sudo mv ./_s7r /usr/share/zsh/site-functions/_s7r
 
-# alias i := install
+alias i := install
