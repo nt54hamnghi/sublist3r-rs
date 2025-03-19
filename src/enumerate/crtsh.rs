@@ -38,7 +38,7 @@ impl Search for CrtSh {
         SETTINGS
     }
 
-    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+    fn next_query(&self, _: &HashSet<String>) -> Option<Cow<'_, str>> {
         Some(Cow::Borrowed(&self.domain))
     }
 

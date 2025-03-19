@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::collections::HashSet;
 
-use reqwest::{Client, Response, header};
+use reqwest::{Client, Response};
 use serde::Deserialize;
 
 use super::{Extract, Search, Settings};
@@ -40,7 +40,7 @@ impl Search for AlienVault {
         SETTINGS
     }
 
-    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+    fn next_query(&self, _: &HashSet<String>) -> Option<Cow<'_, str>> {
         let domain = &self.domain;
         let base_url = SETTINGS.base_url;
         let query = format!("{base_url}/{domain}/passive_dns");

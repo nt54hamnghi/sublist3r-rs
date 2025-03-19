@@ -10,5 +10,5 @@ pub(crate) use crate::enumerate::hackertarget::HackerTarget;
 pub(crate) use crate::enumerate::rapiddns::RapidDNS;
 pub(crate) use crate::enumerate::virustotal::VirusTotal;
 pub(crate) use crate::enumerate::yahoo::Yahoo;
-pub(crate) use crate::enumerate::{Engine, Enumerator, Extract, Search};
+pub(crate) use crate::enumerate::{Engine, Enumerator};
 pub use crate::run;

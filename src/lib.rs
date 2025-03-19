@@ -1,12 +1,9 @@
-#![allow(unused)]
-
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
 use enumerate::{EngineChoice, defaults_headers};
 use prelude::*;
 use reqwest::Client;
-use tracing::info;
 
 pub mod cli;
 pub mod enumerate;
@@ -54,7 +51,7 @@ pub async fn run(domain: &str, choices: Vec<EngineChoice>) -> anyhow::Result<()>
         });
     }
 
-    let output = join_set.join_all().await;
+    join_set.join_all().await;
 
     println!();
     for sub in subdomains.lock().unwrap().iter() {

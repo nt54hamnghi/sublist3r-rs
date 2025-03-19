@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use clap::{Command, Parser, ValueEnum};
+use clap::{Command, Parser};
 use clap_complete::{Generator, Shell, generate};
 use owo_colors::OwoColorize;
 use url::{Host, Url};

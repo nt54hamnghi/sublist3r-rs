@@ -83,13 +83,13 @@ impl Search for VirusTotal {
         SETTINGS
     }
 
-    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+    fn next_query(&self, _: &HashSet<String>) -> Option<Cow<'_, str>> {
         let Self { domain, meta } = self;
 
         let base_url = SETTINGS.base_url;
         let base_query = format!("{base_url}/{domain}/relationships/subdomains");
 
-        let query = match &self.meta {
+        let query = match meta {
             Some(m) => match &m.cursor {
                 Some(c) => format!("{base_query}?cursor={c}"),
                 None => return None,
@@ -155,6 +155,5 @@ struct Domain {
 
 #[derive(Debug, Deserialize)]
 struct Meta {
-    pub count: i64,
     pub cursor: Option<String>,
 }

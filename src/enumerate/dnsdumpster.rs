@@ -55,17 +55,12 @@ impl Search for DNSDumpster {
         SETTINGS
     }
 
-    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+    fn next_query(&self, _: &HashSet<String>) -> Option<Cow<'_, str>> {
         Some(Cow::Borrowed(&self.domain))
     }
 
     #[doc = " Search for a query on a page"]
-    async fn search(
-        &self,
-        client: Client,
-        query: &str,
-        page: usize,
-    ) -> Result<Response, reqwest::Error> {
+    async fn search(&self, client: Client, _: &str, _: usize) -> Result<Response, reqwest::Error> {
         // default token to an empty string,
         // which will cause 401 Unauthorized when the post request is made
         let token = self.init(client.clone()).await?.unwrap_or_default();

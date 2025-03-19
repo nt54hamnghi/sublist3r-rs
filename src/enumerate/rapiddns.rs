@@ -32,7 +32,7 @@ impl Search for RapidDNS {
         SETTINGS
     }
 
-    fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
+    fn next_query(&self, _: &HashSet<String>) -> Option<Cow<'_, str>> {
         let query = format!("{}/{}", SETTINGS.base_url, self.domain);
         Some(Cow::Owned(query))
     }
