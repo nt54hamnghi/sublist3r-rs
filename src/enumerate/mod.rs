@@ -16,6 +16,7 @@ use self::crtsh::CrtSh;
 use self::dnsdumpster::DNSDumpster;
 use self::google::Google;
 use self::hackertarget::HackerTarget;
+use self::rapiddns::RapidDNS;
 use self::virustotal::VirusTotal;
 use self::yahoo::Yahoo;
 
@@ -25,6 +26,7 @@ pub(crate) mod crtsh;
 pub(crate) mod dnsdumpster;
 pub(crate) mod google;
 pub(crate) mod hackertarget;
+pub(crate) mod rapiddns;
 pub(crate) mod virustotal;
 pub(crate) mod yahoo;
 
@@ -68,6 +70,7 @@ pub enum Engine {
     DNSDumpster,
     Google,
     HackerTarget,
+    RapidDNS,
     VirusTotal,
     Yahoo,
 }

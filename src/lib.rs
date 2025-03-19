@@ -32,6 +32,7 @@ pub async fn run(domain: &str, choices: Vec<EngineChoice>) -> anyhow::Result<()>
                 EngineChoice::DNSDumpster => DNSDumpster::new(domain).into(),
                 EngineChoice::Google => Google::new(domain).into(),
                 EngineChoice::HackerTarget => HackerTarget::new(domain).into(),
+                EngineChoice::RapidDNS => RapidDNS::new(domain).into(),
                 EngineChoice::VirusTotal => VirusTotal::new(domain).into(),
                 EngineChoice::Yahoo => Yahoo::new(domain).into(),
             })
