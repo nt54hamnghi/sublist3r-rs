@@ -1,6 +1,8 @@
 # Sublist3r-rs
 
-A simple passive subdomain enumeration tool written in Rust. Inspired by [Sublist3r](https://github.com/aboul3la/Sublist3r) and [subfinder](https://github.com/projectdiscovery/subfinder).
+A simple subdomain enumeration tool using only passive online sources. Written in Rust and inspired by [Sublist3r](https://github.com/aboul3la/Sublist3r) and [subfinder](https://github.com/projectdiscovery/subfinder).
+
+I created this project to learn async/await patterns in Rust and explore the Tokio crate.
 
 ## Installation
 
@@ -69,6 +71,10 @@ Options:
   -V, --version
           Print version
 ```
+
+## Disclaimer
+
+This tool is for educational purposes only. Users are responsible for ensuring they have permission to scan any domain before using this tool. Please respect the terms of use of all data sources used by this tool. Some search engines may have rate limits. The tool is provided as-is without any warranties.
 
 ## License
 

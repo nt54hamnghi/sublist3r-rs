@@ -19,9 +19,9 @@ pub const BANNER: &str = r#"
 
 pub const WARNINGS: &str = r#"
 WARNING:
-[!] Use with caution. You are responsible for your actions.
-[!] Developers assume no liability and are not responsible for any misuse or damage.
-[!] By using this tool, you also agree to the terms of the APIs/services used.
+[!] This tool is for educational purposes only.
+[!] Users are responsible for their actions.
+[!] Please respect the terms of use of all data sources used by this tool.
 "#;
 
 pub fn header() -> String {
