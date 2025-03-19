@@ -9,7 +9,7 @@ I created this project to learn async/await patterns in Rust and explore the Tok
 ### Using `cargo`
 
 ```bash
-git clone https://github.com/hamnghi250699/sublist3r-rs.git
+git clone https://github.com/nt54hamnghi/sublist3r-rs.git
 cd sublist3r-rs
 cargo install --path .
 ```
