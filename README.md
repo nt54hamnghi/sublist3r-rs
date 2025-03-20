@@ -4,6 +4,13 @@ A simple subdomain enumeration tool using only passive online sources. Written i
 
 I created this project to learn async/await patterns in Rust and explore the Tokio crate.
 
+<h1 align="left">
+  <img src="imgs/help.png" alt="subfinder" width="700px"></a>
+  <br>
+  <img src="imgs/run.png" alt="subfinder" width="700px"></a>
+  <br>
+</h1>
+
 ## Installation
 
 ### Using `cargo`
