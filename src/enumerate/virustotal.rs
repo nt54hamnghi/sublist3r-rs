@@ -32,7 +32,7 @@ impl VirusTotal {
         }
     }
 
-    /// Port of the `computeAntiAbuseHeader` function from VirusTotal's frontend
+    /// Port of the `computeAntiAbuseHeader` function from `VirusTotal`'s frontend
     ///
     /// ```ignore
     /// function computeAntiAbuseHeader() {
@@ -50,6 +50,7 @@ impl VirusTotal {
             .expect("Time went backwards")
             .as_secs();
 
+        #[allow(clippy::cast_possible_truncation)]
         let random = || {
             let entropy = 1e10 * (1.0 + fastrand::f64() % 5e4);
             if entropy < 50.0 {

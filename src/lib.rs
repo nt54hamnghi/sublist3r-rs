@@ -55,7 +55,7 @@ pub async fn run(domain: &str, choices: Vec<EngineChoice>) -> anyhow::Result<()>
 
     println!();
     for sub in subdomains.lock().unwrap().iter() {
-        println!("{}", sub);
+        println!("{sub}");
     }
 
     Ok(())

@@ -38,7 +38,8 @@ const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl
 ///  2. Each label can contain alphanumeric characters and hyphens
 ///  3. Hyphens can appear in the middle, but not at start/end
 ///  4. No empty labels (consecutive dots)
-const SUBDOMAIN_RE_STR: &str = r#"(?:[[:alnum:]](?:[[:alnum:]-]*[[:alnum:]])?)(?:\.[[:alnum:]](?:[[:alnum:]-]*[[:alnum:]])?)*"#;
+const SUBDOMAIN_RE_STR: &str =
+    r"(?:[[:alnum:]](?:[[:alnum:]-]*[[:alnum:]])?)(?:\.[[:alnum:]](?:[[:alnum:]-]*[[:alnum:]])?)*";
 
 pub(crate) fn defaults_headers() -> HeaderMap {
     let mut headers = HeaderMap::with_capacity(3);
@@ -112,7 +113,7 @@ pub(crate) trait Search {
 
     /// Delay between pages to avoid being blocked  
     async fn delay(&self) {
-        let dur = Duration::from_millis(500);
+        let dur = Duration::from_millis(200);
         tokio::time::sleep(dur).await;
     }
 }
@@ -131,7 +132,7 @@ where
 }
 
 /// Maximum number of retries, give up after this number of retries
-const MAX_RETRIES: u8 = 10;
+const MAX_RETRIES: u8 = 5;
 /// Maximum backoff time, give up after backoff reaches this value
 const MAX_BACKOFF: u8 = 16;
 
@@ -184,12 +185,12 @@ where
                 .engine
                 .search(client.clone(), &query, page)
                 .await
-                .and_then(|r| r.error_for_status())
+                .and_then(Response::error_for_status)
             {
                 Ok(r) => r,
                 Err(e) => {
                     warn!(err = ?e, backoff = backoff_secs, "failed to search");
-                    tokio::time::sleep(Duration::from_secs(backoff_secs as u64)).await;
+                    tokio::time::sleep(Duration::from_secs(u64::from(backoff_secs))).await;
                     retries += 1;
                     backoff_secs *= 2;
                     continue;

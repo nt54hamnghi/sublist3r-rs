@@ -1,9 +1,11 @@
 [package]
 name = "sublist3r-rs"
 version = "0.1.0"
-authors = ["Nghi Nguyen <hamnghi250699@gmail.com>"]
-edition = "2024"
 description = "A Rust rewrite of Sublist3r"
+authors = ["Nghi Nguyen <hamnghi250699@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/nt54hamnghi/sublist3r-rs"
+edition = "2024"
 
 [dependencies]
 anyhow = "1.0.97"
@@ -35,5 +37,10 @@ path = "src/main.rs"
 # path = "src/debug/main.rs"
 
 [lints.rust]
-unsafe_code = "forbid"
+unsafe_code = { priority = 5, level = "forbid" }
 # unused = { level = "allow", priority = -1 }
+
+[lints.clippy]
+all = { priority = -1, level = "deny" }
+pedantic = { priority = -1, level = "allow" }
+restriction = { priority = -1, level = "allow" }

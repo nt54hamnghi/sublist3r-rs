@@ -60,7 +60,7 @@ impl Search for Google {
         // TODO: consider limiting the number of subdomains to exclude
         let found = subdomains
             .iter()
-            .fold(String::new(), |acc, d| format!("{} -{}", acc, d));
+            .fold(String::new(), |acc, d| format!("{acc} -{d}"));
 
         let query = format!("site:{0} -www.{0}{1}", self.domain, found);
         Some(Cow::Owned(query))
@@ -136,7 +136,7 @@ mod tests {
     #[case::empty("", vec![])]
     #[case::no_matches("no matches found", vec![])]
     #[case::basic(
-        r#"<span>app.example.com &#8250; Text</span>"#,
+        r"<span>app.example.com &#8250; Text</span>",
         vec!["app.example.com"]
     )]
     #[case::with_hyphens(
@@ -144,15 +144,15 @@ mod tests {
         vec!["with-hypen.example.com"]
     )]
     #[case::multi_level(
-        r#"<span>level1.level2.example.com &#8250; Text</span>"#,
+        r"<span>level1.level2.example.com &#8250; Text</span>",
         vec!["level1.level2.example.com"]
     )]
     #[case::multi_matches(
-        r#"
+        r"
         <span>first.example.com &#8250; Text</span>
         <span>second.example.com &#8250; Text</span>
         <span>fourth.third.example.com &#8250; Text</span>
-        "#,
+        ",
         vec!["first.example.com", "second.example.com", "fourth.third.example.com"]
     )]
     fn test_extract(#[case] input: &str, #[case] expected: Vec<&str>) {

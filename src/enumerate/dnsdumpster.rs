@@ -34,7 +34,7 @@ impl DNSDumpster {
         }
     }
 
-    /// Initializes the DNSDumpster session and returns the authorization token
+    /// Initializes the `DNSDumpster` session and returns the authorization token
     async fn init(&self, client: Client) -> Result<Option<String>, reqwest::Error> {
         let init = client
             .get(SETTINGS.base_url)

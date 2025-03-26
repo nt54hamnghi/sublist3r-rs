@@ -39,7 +39,7 @@ impl Search for Bing {
     fn next_query(&self, subdomains: &HashSet<String>) -> Option<Cow<'_, str>> {
         let found = subdomains
             .iter()
-            .fold(String::new(), |acc, d| format!("{} -{}", acc, d));
+            .fold(String::new(), |acc, d| format!("{acc} -{d}"));
 
         let query = format!("domain:{0} -www.{0}{1}", self.domain, found);
         Some(Cow::Owned(query))
@@ -78,27 +78,27 @@ mod tests {
     #[case::empty("", vec![])]
     #[case::no_matches("no matches found", vec![])]
     #[case::basic(
-        r#"<cite>https://app.example.com</cite>"#,
+        r"<cite>https://app.example.com</cite>",
         vec!["app.example.com"]
     )]
     #[case::basic_with_extra_text(
-        r#"<cite><cite>https://app.example.com - App</cite> - Bing</cite>"#,
+        r"<cite><cite>https://app.example.com - App</cite> - Bing</cite>",
         vec!["app.example.com"]
     )]
     #[case::with_hyphens(
-        r#"<cite>https://with-hypen.example.com</cite>"#,
+        r"<cite>https://with-hypen.example.com</cite>",
         vec!["with-hypen.example.com"]
     )]
     #[case::multi_level(
-        r#"<cite>https://level1.level2.example.com</cite>"#,
+        r"<cite>https://level1.level2.example.com</cite>",
         vec!["level1.level2.example.com"]
     )]
     #[case::multi_matches(
-        r#"
+        r"
         <cite>https://first.example.com</cite>
         <cite>https://second.example.com</cite>
         <cite>https://fourth.third.example.com</cite>
-        "#,
+        ",
         vec!["first.example.com", "second.example.com", "fourth.third.example.com"]
     )]
     fn test_extract(#[case] input: &str, #[case] expected: Vec<&str>) {

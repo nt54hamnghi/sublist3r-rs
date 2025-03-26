@@ -65,7 +65,7 @@ impl From<Vec<Item>> for CrtShResponse {
     fn from(value: Vec<Item>) -> Self {
         let mut data = HashSet::with_capacity(value.len());
         for i in value {
-            let domains = i.name_value.split("\n").map(String::from);
+            let domains = i.name_value.split('\n').map(String::from);
             data.extend(domains);
         }
 

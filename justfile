@@ -3,22 +3,19 @@ fmt:
 
 alias f := fmt
 
-prep:
-    cargo +nightly fmt
-    git add .
-    cargo clippy --fix --allow-staged -- -A clippy::correctness
-    git reset
+check:
+    cargo clippy -- -D clippy:all -W clippy::pedantic
 
-alias p := prep
+alias c := check
+
+fix:
+    cargo clippy --fix 
 
 watch:
-    @cargo watch -cqx "run --bin debug"
     # @cargo watch -cqx "r"
+    @cargo watch -cqx "run --bin debug"
 
 alias w := watch
-
-# zsh:
-#    @sudo cp ./completion/zsh-completion /usr/share/zsh/site-functions/_sublist3r-rs
 
 install:
    @cargo install --path .

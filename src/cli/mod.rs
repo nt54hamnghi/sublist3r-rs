@@ -7,7 +7,7 @@ use url::{Host, Url};
 
 use crate::enumerate::EngineChoice;
 
-pub const BANNER: &str = r#"
+pub const BANNER: &str = r"
             _____    
        ____/__  /____
       / ___/ / / ___/
@@ -15,14 +15,14 @@ pub const BANNER: &str = r#"
     /____/ /_/_/     
     
     @nt54hamnghi
-"#;
+";
 
-pub const WARNINGS: &str = r#"
+pub const WARNINGS: &str = r"
 WARNING:
 [!] This tool is for educational purposes only.
 [!] Users are responsible for their actions.
 [!] Please respect the terms of use of all data sources used by this tool.
-"#;
+";
 
 pub fn header() -> String {
     format!("{}\n{}", BANNER.purple(), WARNINGS.yellow())

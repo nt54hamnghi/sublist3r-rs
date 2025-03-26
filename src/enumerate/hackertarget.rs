@@ -27,7 +27,7 @@ impl HackerTarget {
 impl Extract for HackerTarget {
     fn extract(&mut self, input: &str) -> HashSet<String> {
         input
-            .split("\n")
+            .split('\n')
             .filter_map(|l| l.split_once(','))
             .map(|(host, _)| host.to_owned())
             .collect()

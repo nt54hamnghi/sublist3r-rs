@@ -70,7 +70,7 @@ impl From<PassiveDns> for AlienVaultResponse {
     fn from(value: PassiveDns) -> Self {
         let PassiveDns { passive_dns, count } = value;
 
-        let mut data = HashSet::with_capacity(count as usize);
+        let mut data = HashSet::with_capacity(count);
         let v = passive_dns.into_iter().map(|i| i.hostname);
         data.extend(v);
 
@@ -81,7 +81,7 @@ impl From<PassiveDns> for AlienVaultResponse {
 #[derive(Debug, Deserialize)]
 struct PassiveDns {
     passive_dns: Vec<Item>,
-    count: i64,
+    count: usize,
 }
 
 #[derive(Debug, Deserialize)]
