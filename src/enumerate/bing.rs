@@ -17,7 +17,7 @@ const SETTINGS: Settings = Settings {
 const X_MSEDGE_CLIENT_ID: &str = "sublist3r-rs-bing";
 
 #[derive(Extract)]
-#[extract(pattern = r#"<cite>https:\/\/(?<subdomain>.*?\.{domain}).*?<\/cite>"#)]
+#[extract(pattern = r#"<cite>https:\/\/(?<subdomain>[[:alnum:]\-\.]*?\.{domain}).*?<\/cite>"#)]
 pub struct Bing {
     #[extract(domain)]
     domain: String,
