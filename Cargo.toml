@@ -24,6 +24,7 @@ clap = { version = "4.5.38", features = ["derive"] }
 url = "=2.5.4"
 owo-colors = "4.2.1"
 clap_complete = "4.5.50"
+strum = { version = "0.27.1", features = ["derive"] }
 
 [dev-dependencies]
 rstest = "0.25.0"

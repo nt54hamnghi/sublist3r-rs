@@ -2,12 +2,13 @@ use std::borrow::Cow;
 use std::collections::HashSet;
 use std::time::Duration;
 
+use clap::ValueEnum;
 use enum_dispatch::enum_dispatch;
 pub use enumerate_derive::Extract;
-use enumerate_derive::{enum_choice, enum_vec};
 use owo_colors::OwoColorize;
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, HeaderMap, HeaderValue};
 use reqwest::{Client, Response};
+use strum::{EnumDiscriminants, VariantArray};
 use tracing::{info, trace, warn};
 
 use self::alienvault::AlienVault;
@@ -62,8 +63,10 @@ pub(crate) fn defaults_headers() -> HeaderMap {
 }
 
 #[enum_dispatch(Extract, Search)]
-#[enum_vec]
-#[enum_choice]
+#[derive(EnumDiscriminants)]
+#[strum_discriminants(name(EngineChoice))]
+#[strum_discriminants(derive(VariantArray, ValueEnum))]
+#[strum_discriminants(clap(rename_all = "lower"))]
 pub enum Engine {
     AlienVault,
     Bing,
@@ -74,6 +77,27 @@ pub enum Engine {
     RapidDNS,
     VirusTotal,
     Yahoo,
+}
+
+impl Engine {
+    pub fn from_iter<I>(iter: I, domain: &str) -> Vec<Engine>
+    where
+        I: IntoIterator<Item = EngineChoice>,
+    {
+        iter.into_iter()
+            .map(|c| match c {
+                EngineChoice::AlienVault => AlienVault::new(domain).into(),
+                EngineChoice::Bing => Bing::new(domain).into(),
+                EngineChoice::CrtSh => CrtSh::new(domain).into(),
+                EngineChoice::DNSDumpster => DNSDumpster::new(domain).into(),
+                EngineChoice::Google => Google::new(domain).into(),
+                EngineChoice::HackerTarget => HackerTarget::new(domain).into(),
+                EngineChoice::RapidDNS => RapidDNS::new(domain).into(),
+                EngineChoice::VirusTotal => VirusTotal::new(domain).into(),
+                EngineChoice::Yahoo => Yahoo::new(domain).into(),
+            })
+            .collect()
+    }
 }
 
 #[enum_dispatch]

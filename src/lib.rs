@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
-use enumerate::{EngineChoice, defaults_headers};
-use prelude::*;
+use enumerate::{Engine, EngineChoice, Enumerator, defaults_headers};
 use reqwest::Client;
+use strum::VariantArray;
 
 pub mod cli;
 pub mod enumerate;
@@ -18,22 +18,9 @@ pub async fn run(domain: &str, choices: Vec<EngineChoice>) -> anyhow::Result<()>
         .build()?;
 
     let engines: Vec<Engine> = if choices.is_empty() {
-        Engine::enum_vec(domain)
+        Engine::from_iter(EngineChoice::VARIANTS.to_owned(), domain)
     } else {
-        choices
-            .into_iter()
-            .map(|c| match c {
-                EngineChoice::AlienVault => AlienVault::new(domain).into(),
-                EngineChoice::Bing => Bing::new(domain).into(),
-                EngineChoice::CrtSh => CrtSh::new(domain).into(),
-                EngineChoice::DNSDumpster => DNSDumpster::new(domain).into(),
-                EngineChoice::Google => Google::new(domain).into(),
-                EngineChoice::HackerTarget => HackerTarget::new(domain).into(),
-                EngineChoice::RapidDNS => RapidDNS::new(domain).into(),
-                EngineChoice::VirusTotal => VirusTotal::new(domain).into(),
-                EngineChoice::Yahoo => Yahoo::new(domain).into(),
-            })
-            .collect()
+        Engine::from_iter(choices, domain)
     };
 
     let subdomains = Arc::new(Mutex::new(HashSet::<String>::new()));
