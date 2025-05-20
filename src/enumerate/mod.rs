@@ -65,8 +65,8 @@ pub fn defaults_headers() -> HeaderMap {
 #[enum_dispatch(Extract, Search)]
 #[derive(EnumDiscriminants)]
 #[strum_discriminants(name(EngineChoice))]
-#[strum_discriminants(derive(VariantArray, ValueEnum))]
-#[strum_discriminants(clap(rename_all = "lower"))]
+#[strum_discriminants(derive(VariantArray))]
+#[strum_discriminants(derive(ValueEnum), clap(rename_all = "lower"))]
 pub enum Engine {
     AlienVault,
     Bing,
