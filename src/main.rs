@@ -1,7 +1,12 @@
 use clap::CommandFactory;
+pub use clap::Parser;
 use owo_colors::OwoColorize;
-use sublist3r_rs::prelude::*;
+use sublist3r_rs::cli::{Cli, banner, print_completions};
+use sublist3r_rs::run;
 use tracing::Level;
+
+// pub use crate::cli::{Cli, header, print_completions};
+// pub use crate::run;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -29,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
         .domain()
         .ok_or_else(|| anyhow::anyhow!("Invalid domain"))?;
 
-    println!("{}", header());
+    println!("{}", banner());
     println!(
         "{} {}",
         "[-] Enumerating subdomains now for".blue(),

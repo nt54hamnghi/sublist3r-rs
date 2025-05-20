@@ -24,7 +24,7 @@ WARNING:
 [!] Please respect the terms of use of all data sources used by this tool.
 ";
 
-pub fn header() -> String {
+pub fn banner() -> String {
     format!("{}\n{}", BANNER.purple(), WARNINGS.yellow())
 }
 
@@ -32,7 +32,7 @@ pub fn header() -> String {
 #[derive(Parser, Debug)]
 #[command(name = "s7r")]
 #[command(author, version, about, long_about)]
-#[command(before_help = header(), before_long_help = header())]
+#[command(before_help = banner(), before_long_help = banner())]
 #[command(arg_required_else_help = true)]
 #[command(verbatim_doc_comment, propagate_version = true)]
 pub struct Cli {

@@ -6,8 +6,7 @@ use reqwest::Client;
 use strum::VariantArray;
 
 pub mod cli;
-pub mod enumerate;
-pub mod prelude;
+mod enumerate;
 
 #[tracing::instrument(skip_all)]
 pub async fn run(domain: &str, choices: Vec<EngineChoice>) -> anyhow::Result<()> {

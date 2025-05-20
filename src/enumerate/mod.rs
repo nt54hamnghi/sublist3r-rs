@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use clap::ValueEnum;
 use enum_dispatch::enum_dispatch;
-pub use enumerate_derive::Extract;
+use enumerate_derive::Extract;
 use owo_colors::OwoColorize;
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING, ACCEPT_LANGUAGE, HeaderMap, HeaderValue};
 use reqwest::{Client, Response};
@@ -21,15 +21,15 @@ use self::rapiddns::RapidDNS;
 use self::virustotal::VirusTotal;
 use self::yahoo::Yahoo;
 
-pub(crate) mod alienvault;
-pub(crate) mod bing;
-pub(crate) mod crtsh;
-pub(crate) mod dnsdumpster;
-pub(crate) mod google;
-pub(crate) mod hackertarget;
-pub(crate) mod rapiddns;
-pub(crate) mod virustotal;
-pub(crate) mod yahoo;
+pub mod alienvault;
+pub mod bing;
+pub mod crtsh;
+pub mod dnsdumpster;
+pub mod google;
+pub mod hackertarget;
+pub mod rapiddns;
+pub mod virustotal;
+pub mod yahoo;
 
 const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
@@ -42,7 +42,7 @@ const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Appl
 const SUBDOMAIN_RE_STR: &str =
     r"(?:[[:alnum:]](?:[[:alnum:]-]*[[:alnum:]])?)(?:\.[[:alnum:]](?:[[:alnum:]-]*[[:alnum:]])?)*";
 
-pub(crate) fn defaults_headers() -> HeaderMap {
+pub fn defaults_headers() -> HeaderMap {
     let mut headers = HeaderMap::with_capacity(3);
 
     // advertises that this client can handle `text/html`, `application/xhtml+xml`, and `application/xml`, etc.,
@@ -101,7 +101,7 @@ impl Engine {
 }
 
 #[enum_dispatch]
-pub(crate) trait Extract {
+pub trait Extract {
     fn extract(&mut self, input: &str) -> HashSet<String>;
 }
 
@@ -114,7 +114,7 @@ pub struct Settings {
 }
 
 #[enum_dispatch]
-pub(crate) trait Search {
+pub trait Search {
     fn settings(&self) -> Settings;
 
     /// Generate the next search query based on discovered subdomains
@@ -142,7 +142,7 @@ pub(crate) trait Search {
     }
 }
 
-pub(crate) struct Enumerator<E> {
+pub struct Enumerator<E> {
     engine: E,
 }
 
